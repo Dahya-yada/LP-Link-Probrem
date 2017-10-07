@@ -18,6 +18,7 @@ class Model(object):
 
     def model(self, s):
         # GUROBIオブジェクト
+        self.MODEL = grb.Model('LP_MODEL')
         # 添字
         D  = self.DATA.graph.site_list
         I  = range(self.DATA.graph.node_num)
