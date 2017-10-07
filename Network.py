@@ -158,10 +158,10 @@ class Topology(object):
 # FOR TEST
 if __name__ == "__main__":
     graph = Topology(20, 5, 2, 0.8, 'BA')
-    print("拠点：")
-    print(graph.make_site_list(), end='\n\n\n')
-    print("リンク：")
-    print(graph.make_link_list(), end='\n\n\n')
-    print("双方向リンク：")
+    print "拠点："
+    print graph.make_site_list()
+    print "リンク："
+    print graph.make_link_list()
+    print "双方向リンク："
     print(graph.make_both_link_list())
     graph.generate_images(first=True, save=False)

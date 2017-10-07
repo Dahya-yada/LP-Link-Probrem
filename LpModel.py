@@ -19,13 +19,13 @@ class Model(object):
     def model(self, s):
         # GUROBIオブジェクト
         # 添字
-        D  = data.graph.site_list
-        I  = range(data.graph.node_num)
-        J  = range(data.graph.node_num)
+        D  = self.DATA.graph.site_list
+        I  = range(self.DATA.graph.node_num)
+        J  = range(self.DATA.graph.node_num)
         # 定数
-        Tsig = data.signal_now
-        Lmax = data.bandwidth_max
-        Luse = data.solve_x
+        Tsig = self.DATA.signal_now
+        Lmax = self.DATA.bandwidth_max
+        Luse = self.DATA.solve_x
         # 変数
         X = {(d, i, j): self.MODEL.addVar(vtype='B', name='x.{}.{}.{}'.format(d,i,j)) for j in J for i in I for d in D}
         M = self.MODEL.addVar(vtype='I', name='M')
@@ -57,10 +57,11 @@ class Model(object):
             if s == d:
                 continue
             for i in I:
-                if i == j:
-                    continue
-                self.MODEL.addConstr(X[d,i,j] * Tsig >= 0, 'CONST::traff_x.{}.{}.{}>=0'.format(d,i,j))
-                self.MODEL.addConstr(X[d,i,j] * Tsig + Luse[i,j] <= Lmax, 'CONST::traff_x.{}.{}.{}<=MAX'.format(d,i,j))
+                for j in J:
+                    if i == j:
+                        continue
+                    self.MODEL.addConstr(X[d,i,j] * Tsig >= 0, 'CONST::traff_x.{}.{}.{}>=0'.format(d,i,j))
+                    self.MODEL.addConstr(X[d,i,j] * Tsig + Luse[i,j] <= Lmax, 'CONST::traff_x.{}.{}.{}<=MAX'.format(d,i,j))
 
         for i in I:
             for j in J:

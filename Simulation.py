@@ -18,11 +18,13 @@ class Simulation(object):
     
     def solve(self):
         for site in self.DATA.graph.site_list:
+            self.MODEL.model(site)
             self.MODEL.MODEL.optimize()
 
             for d in self.DATA.graph.site_list:
                 for link in self.DATA.graph.both_link_list:
-                    print(self.MODEL.X[d,link[0], link[1]].x)
+                    if self.MODEL.X[d,link[0], link[1]].x > 0:
+                        print site, d, link[0], link[1]
 
 
 
@@ -39,7 +41,7 @@ if __name__ == '__main__':
     sig_max  = 4 * 20000
     sig_div  = 20
 
-    graph = Network.Topology(node, site, connect=3)
+    graph = Network.Topology(node, site, connects=3)
     data  = Data.Data(graph, link_max, sig_max, sig_div)
     model = LpModel.Model(data)
     simu  = Simulation(data,model)
