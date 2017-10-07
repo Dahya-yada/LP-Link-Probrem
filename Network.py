@@ -18,20 +18,24 @@ class Topology(object):
     ネットワークトポロジ（グラフ）を生成するクラス
     """
 
-    def __init__(self, nodes=10, edges=5, connect=2, probability=0.8, types='BA'):
+    def __init__(self, nodes=10, sites=5, connects=2, probability=0.8, types='BA'):
         """コンストラクタ"""
-        self.ノード数 = nodes
-        self.拠点数   = edges
-        self.接続数   = connect
-        self.確率     = probability
-        self.タイプ   = types
+        self.node_num = nodes
+        self.site_num = sites
 
-        self.グラフ = self.generate_graph(nodes, connect, probability, types)
-        self.G_POS = nx.spring_layout(self.グラフ)
-        self.拠点リスト = self.list_edges()
-        self.リンクリスト = self.list_links()
+        self.conn_num = connects
+        self.prob     = probability
+        self.nw_type  = types
 
-    def generate_graph(self, n, c, p, t):
+        self.GRAPH    = self.make_graph(nodes, connects, probability, types)
+        self.G_POS    = nx.spring_layout(self.GRAPH)
+
+        self.site_list      = self.make_site_list()
+        self.link_list      = self.make_link_list()
+        self.both_link_list = self.make_both_link_list()
+
+
+    def make_graph(self, n, c, p, t):
         """
         NetworkXグラフを生成する．
         :param n: ノード数
@@ -44,77 +48,69 @@ class Topology(object):
         """
         if t == 'BA':
             g = nx.barabasi_albert_graph(n, c)
-
         if t == 'powerlaw_cluster':
             g = nx.powerlaw_cluster_graph(n, c, p)
-
         return g
 
-    def iter_nodes(self, n=None):
+    def make_site_list(self, n=None):
         """
-        ネットワークを構成するノードのイテレータを生成する．
-        :param n: ノード数
-        :return: ノード番号
-        :rtype: int
-        """
-        if n is None:
-            n = self.ノード数
-
-        for i in range(n):
-            yield i
-
-    def list_links(self, g=None):
-        """
-        ネットワークを構成するリンクのイテレータを生成する．
-        :param g: NetworkXグラフオブジェクト
-        :return: 接続ノードのタプル
-        :rtype: tuple
-        """
-        if g is None:
-            g = self.グラフ
-        return g.edges()
-
-
-    def list_both_links(self):
-        """
-        ネットワークを構成する両方向リンクのイテレータを生成する．
-        :param g: NetworkXグラフオブジェクト
-        :return: 接続ノードのタプル
-        :rtype: tuple
-        """
-        l = []
-        for n in self.グラフ.edges():
-            l.append(n)
-            l.append((n[1],n[0]))
-        return l
-
-    def list_edges(self, n=None, e=None):
-        """
-        ネットワーク内のノードから適当にeだけエッジノード（拠点）を選び，そのリストを返す．
-        :param e: エッジ数
-        :return: エッジノードのリスト
+        ネットワーク内のノードから適当にnだけ拠点を選び，そのリストを返す．
+        :param n: 拠点数
+        :return: 拠点のリスト
         :rtype: list
         """
         if n is None:
-            n = self.ノード数
-        if e is None:
-            e = self.拠点数
+            n = self.site_num
+        return rand.sample(range(self.node_num), n)
 
-        e_node = rand.sample(list(self.iter_nodes(n)), e)
-        return e_node
+    def make_link_list(self):
+        """
+        ネットワークを構成するリンクのリストを生成する．
+        :return: 接続ノードの組(タプル)のリスト
+        :rtype: tlist
+        """
+        return self.GRAPH.edges()
 
-    def iter_edges(self, e=None):
+    def make_both_link_list(self):
         """
-        ネットワーク内のノードから選出されたエッジノード（拠点）のイテレータを生成する．
-        :param e: エッジノードのリスト
-        :return: 拠点番号
-        :rtype: int
+        ネットワークを構成する両方向リンクのタプルを生成する．
+        :return: 接続ノードの組(タプル)のリスト
+        :rtype: list
         """
-        if e is None:
-            e = self.拠点リスト
-        for i in e:
-            yield e
-        
+        l   = self.make_link_list()
+        l2  = [(t[1], t[0]) for t in l]
+        l.extend(l2)
+        return l
+
+    def make_site_dict(self, v=0):
+        """
+        拠点番号をキー，値の初期値をvにしたディクショナリを返す．
+        :param v: 値の初期値
+        :return: 拠点のディクショナリ
+        :rtype: dict
+        """
+        key = self.make_site_list()
+        return {k: v for k in key}
+
+    def make_link_dict(self, v=0):
+        """
+        リンクをキー，値の初期値をvにしたディクショナリを返す．
+        :param v: 値の初期値
+        :return: リンクのディクショナリ
+        :rtype: dict
+        """
+        key = self.make_link_list()
+        return {k: v for k in key}
+
+    def make_both_link_dict(self, v=0):
+        """
+        双方向のリンクをキー，値の初期値をvにしたディクショナリを返す．
+        :param v: 値の初期値
+        :return: リンクのディクショナリ
+        :rtype: dict
+        """
+        key = self.make_both_link_list()
+        return {k: v for k in key}
 
     def generate_images(self, g=None,
                         first=True, save=True, filename='Toporogy.svg',
@@ -135,22 +131,22 @@ class Topology(object):
         fig_x     = 13
         fig_y     = 8
         fSize     = 11
-        fFamily   = 'Kozuka Gothic Pr6N'
+        fFamily   = 'Nimbus Roman No9 L'
 
         if g is None:
-            g = self.グラフ
+            g = self.GRAPH
 
         pylab.figure(figsize=(fig_x, fig_y))
         pylab.xticks([])
         pylab.yticks([])
 
         if first:
-            cMask = [eColor if n in self.拠点リスト else nColor for n in self.iter_nodes()]
+            cMask = [eColor if n in self.site_list else nColor for n in range(self.node_num)]
             nx.draw_networkx_nodes (g, self.G_POS, node_size=nSize, node_color=cMask)
             nx.draw_networkx_edges (g, self.G_POS, width=linkWidth)
             nx.draw_networkx_labels(g, self.G_POS, font_size=fSize, font_family=fFamily)
         else:
-            lWidth = [costList[k[0]][k[1]] * 20 /maxCost for k in self.iter_links()]
+            lWidth = [costList[k[0]][k[1]] * 20 /maxCost for k in self.link_list]
             nx.draw_networkx_edges(g, self.G_POS, width=lWidth)
 
         if save:
@@ -162,7 +158,10 @@ class Topology(object):
 # FOR TEST
 if __name__ == "__main__":
     graph = Topology(20, 5, 2, 0.8, 'BA')
-    #print(list(graph.iter_nodes()))
-    #print(graph.list_edges())
-    print(graph.list_links())
+    print("拠点：")
+    print(graph.make_site_list(), end='\n\n\n')
+    print("リンク：")
+    print(graph.make_link_list(), end='\n\n\n')
+    print("双方向リンク：")
+    print(graph.make_both_link_list())
     graph.generate_images(first=True, save=False)
