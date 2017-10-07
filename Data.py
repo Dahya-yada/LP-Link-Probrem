@@ -14,13 +14,32 @@ class Data(object):
         self.bandwidth_max = bandwidth_max
         self.signal_traffic_max=signal_traffic_max
         self.signal_division=signal_division
+
+        self.links_x = self.graph.make_link_list()
+        self.sites_x = self.make_site_link_dic()
+        self.solve_x = self.make_link_matrix() 
     
-    def make_link_array(self):
+    def make_link_matrix(self):
+        """
+        リンクのマトリックスを生成する．
+        """
+        dic = {(i, j): self.bandwidth_max for i in range(self.graph.node_num) for j in range(self.graph.node_num)}
+        for index in self.graph.make_both_link_list:
+            dic[index] = 0
+        
+        return dic
+
+    def make_site_link_dic(self):
+        """
+        拠点ごとのリンク帯域のディクショナリを生成する．
+        """
+        dic = {k: v for k in self.graph.site_list for v in self.graph.link_list}
+        return dic
          
 
 
 if __name__ == '__main__':
-    import Network = nw
+    import Network as nw
 
-    Graph = nw.Toporogy();
+    Graph = nw.Topology()
     Data  = Data(Graph, 10000, 1000, 10)
