@@ -21,15 +21,19 @@ class Data(object):
         self.signal_now         = self.signal_unit
         self.signal_site        = 0
 
+        self.x_sig       = self.graph.make_link_dict()
+        self.x_cpy       = self.graph.make_link_dict()
+
         self.links_x     = self.graph.make_link_list()
-        self.sites_x_cpy = self.make_site_link_dict()
-        self.sites_x_sig = self.make_site_link_dict()
+        #self.sites_x_cpy = self.make_site_link_dict()
+        #self.sites_x_sig = self.make_site_link_dict()
         self.sites_x_tmp = self.make_num_sites_link_dict()
         self.solve_x     = self.make_link_matrix()
         #self.solve_x     = {k: self.make_link_matrix() for k in self.graph.site_list}
 
         self.vm_num      = {k: 0 for k in self.graph.site_list}
 
+        self.sed_dev_tmp = {k: 0 for k in self.graph.site_list}
         self.std_dev     = {k + 1: 0 for k in range(vm_add_num)}
 
     def make_link_matrix(self):
