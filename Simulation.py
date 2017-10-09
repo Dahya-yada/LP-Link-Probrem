@@ -24,11 +24,22 @@ class Simulation(object):
         一度だけ線形計画問題を解きます．これに基づき，最小の標準偏差を持つような，新しい仮想リンクと拠点を決定します．
         """
         S            = self.DATA.graph.site_list
-        result_links = {k: self.DATA.graph.make_link_dict for k in S}
+        result_links = {k: 0 for k in S}
+
+        self.detect_signal_bandwidth()
+        self.copy_site_x_tmp_to_solve_x()
 
         for s in S:
             self.MODEL.make_model()
             self.MODEL.MODEL.optimize()
+            result_links[s] = self.make_result_link_dic()
+        
+        min_dev_site = self.calc_std_dev(result_links)
+        copy_result_to_site_x_tmp(min_dev_site, result_links)
+        self.DATA.vm_num[min_dev_site] += 1
+        make_x_sig()
+        
+
             
     
     def detect_signal_bandwidth(self):
@@ -66,15 +77,76 @@ class Simulation(object):
         S = self.DATA.graph.site_list
         L = self.DATA.graph.link_list
 
+        self.DATA.solve_x = self.DATA.make_link_matrix()
+
         for i in I:
             for s in S:
                 for l in L:
                     self.DATA.solve_x[l] += self.DATA.sites_x_tmp[i][s][l]
                     self.DATA.solve_x[l[1], l[0]] += self.DATA.sites_x_tmp[i][s][l[1], l[0]]
     
-    def make_result_link_dic(self):
-        dic = self.DATA.graph.make_link_dict
+    def copy_result_to_site_x_tmp(self, s, result_links):
+        """
+        新しい仮想リンク経路をsite_x_tmpにコピーする．
+        """
+        L     = self.DATA.graph.link_list
+        t_num = self.DATA.try_num
+        d_site_x_tmp = self.DATA.sites_x_tmp
         
+        for l in L:
+            d_site_x_tmp[t_num][s][l[0] ,l[1]] = result_links[s][l[0],l[1]]
+
+    
+    def make_result_link_dic(self):
+        """
+        ソルバーが求めた仮想リンク経路のディクショナリを生成する．
+        """
+        D   = self.DATA.graph.site_list
+        L   = self.DATA.graph.link_list
+        dic = self.DATA.graph.make_link_dict
+
+        for d in D:
+            for l in L:
+                dic[l[0], l[1]] += self.MODEL.X[d, l[0], l[1]].x * self.DATA.signal_site
+                dic[l[1], l[0]] += self.MODEL.X[d, l[1], l[0]].x * self.DATA.signal_site
+        return dic
+
+        def calc_min_std_dev(self, result_links):
+            """
+            求めた仮想リンク経路から，物理リンクの使用帯域の標準偏差が最小の拠点を求めます．
+            """
+            S           = self.DATA.graph.site_list
+            D           = self.DATA.graph.link_list
+            result      = copy.deepcopy(result_links)
+            std_dev_tmp = {k: 0 for k in self.DATA.graph.site_list}
+
+            for s in S:
+                for l in L:
+                    result[s][l] += self.DATA.x_sig[l]
+
+            for s in S:
+                std_dev_tmp[s] = numpy.std(result[s].values())
+            min_dev_site = std_dev_tmp.items(), key=lambda x:x[1])[0]
+
+            self.DATA.std_dev[self.DATA.try_now] = std_dev_tmp[min_dev_site]
+
+            return min_dev_site
+        
+        def make_x_sig(self)
+            I = range(self.DATA.try_now)
+            S = self.DATA.graph.site_list
+            L = self.DATA.graph.link_list
+
+            self.DATA.x_sig = self.DATA.make_link_dict()
+
+            for i in I:
+                for s in S:
+                    for l in L:
+                        self.DATA.x_sig[l] += self.DATA.sites_x_tmp[i][s][l[0], l[1]]
+                        self.DATA.x_sig[l] += self.DATA.sites_x_tmp[i][s][l[1], l[0]]
+
+
+
     
 
 
