@@ -19,11 +19,14 @@ class Data(object):
         self.signal_division    = signal_division
         self.signal_unit        = signal_traffic_max / signal_division
         self.signal_now         = self.signal_unit
+        self.signal_site        = 0
 
         self.links_x     = self.graph.make_link_list()
-        self.sites_x     = self.make_site_link_dict()
-        self.sites_x_tmp = self.make_site_link_dict()
+        self.sites_x_cpy = self.make_site_link_dict()
+        self.sites_x_sig = self.make_site_link_dict()
+        self.sites_x_tmp = self.make_num_sites_link_dict()
         self.solve_x     = self.make_link_matrix()
+        #self.solve_x     = {k: self.make_link_matrix() for k in self.graph.site_list}
 
         self.vm_num      = {k: 0 for k in self.graph.site_list}
 
@@ -38,10 +41,17 @@ class Data(object):
             dic[index] = 0
         
         return dic
+    def make_num_sites_link_dict(self):
+        """
+        VM追加回数，拠点，単方向リンクを添え字に持つディクショナリを返す．
+        """
+        t_num  = range(self.try_num)
+        s_list = self.graph.site_list
+        return {p: {q: self.make_site_link_dict() for p in t_num} for p in s_list}
 
     def make_site_link_dict (self):
         """
-        拠点ごとのリンク帯域のディクショナリを生成する．
+        拠点ごとの単方向リンク帯域のディクショナリを生成する．
         """
         dic = {k: self.graph.make_link_dict() for k in self.graph.site_list}
         return dic

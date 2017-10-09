@@ -16,7 +16,7 @@ class Model(object):
         self.MODEL = grb.Model('LP_MODEL')
         self.X     = 0
 
-    def model(self, s):
+    def make_model(self, s):
         # GUROBIオブジェクト
         self.MODEL = grb.Model('LP_MODEL')
         # 添字

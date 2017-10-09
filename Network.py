@@ -65,7 +65,7 @@ class Topology(object):
 
     def make_link_list(self):
         """
-        ネットワークを構成するリンクのリストを生成する．
+        ネットワークを構成する単方向リンクのリストを生成する．
         :return: 接続ノードの組(タプル)のリスト
         :rtype: tlist
         """
@@ -94,7 +94,7 @@ class Topology(object):
 
     def make_link_dict(self, v=0):
         """
-        リンクをキー，値の初期値をvにしたディクショナリを返す．
+        単方向リンクをキー，値の初期値をvにしたディクショナリを返す．
         :param v: 値の初期値
         :return: リンクのディクショナリ
         :rtype: dict
