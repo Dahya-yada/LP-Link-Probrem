@@ -25,7 +25,7 @@ class Model(object):
         I  = range(self.DATA.graph.node_num)
         J  = range(self.DATA.graph.node_num)
         # 定数
-        Tsig = self.DATA.signal_now
+        Tsig = self.DATA.signal_site
         Lmax = self.DATA.bandwidth_max
         Luse = self.DATA.solve_x
         # 変数

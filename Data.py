@@ -5,6 +5,8 @@
 # pylint: disable=C0326
 # pylint: disable=C0301
 
+import copy
+
 class Data(object):
     """
     線形計画法に使用するデータ
@@ -21,16 +23,13 @@ class Data(object):
         self.signal_now         = self.signal_unit
         self.signal_site        = 0
 
+        self.links_x     = self.graph.make_link_list()
         self.x_sig       = self.graph.make_link_dict()
         self.x_cpy       = self.graph.make_link_dict()
-
-        self.links_x     = self.graph.make_link_list()
-        #self.sites_x_cpy = self.make_site_link_dict()
-        #self.sites_x_sig = self.make_site_link_dict()
         self.sites_x_tmp = self.make_num_sites_link_dict()
         self.solve_x     = self.make_link_matrix()
-        #self.solve_x     = {k: self.make_link_matrix() for k in self.graph.site_list}
 
+        self.sites_list  = copy.deepcopy(self.graph.site_list)
         self.vm_num      = {k: 0 for k in self.graph.site_list}
 
         self.sed_dev_tmp = {k: 0 for k in self.graph.site_list}
@@ -51,7 +50,7 @@ class Data(object):
         """
         t_num  = range(self.try_num)
         s_list = self.graph.site_list
-        return {p: {q: self.make_site_link_dict() for q in t_num} for p in s_list}
+        return {p: {q: {r: 0 for r in self.graph.link_list} for q in t_num} for p in s_list}
 
     def make_site_link_dict (self):
         """
