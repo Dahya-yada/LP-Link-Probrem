@@ -19,6 +19,7 @@ class Model(object):
     def make_model(self, s):
         # GUROBIオブジェクト
         self.MODEL = grb.Model('LP_MODEL')
+        self.MODEL.setParam('OutputFlag', False)
         # 添字
         D  = self.DATA.graph.site_list
         I  = range(self.DATA.graph.node_num)

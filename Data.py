@@ -51,7 +51,7 @@ class Data(object):
         """
         t_num  = range(self.try_num)
         s_list = self.graph.site_list
-        return {p: {q: self.make_site_link_dict() for p in t_num} for p in s_list}
+        return {p: {q: self.make_site_link_dict() for q in t_num} for p in s_list}
 
     def make_site_link_dict (self):
         """
