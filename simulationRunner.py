@@ -20,14 +20,13 @@ class Runner(object):
         self.SIMU  = Simu.Simulation(o_data, o_model)
 
     def run(self):
-        end = self.DATA.try_num
-        now = self.DATA.try_now
-        
-        while now < end:
-            print("now:{}, end{}".format(now, end) )
+        while self.DATA.try_now < self.DATA.try_num:
+            print "--- {} ---".format(self.DATA.try_now + 1)
             self.SIMU.solve()
-            now += 1
-        print self.DATA.std_dev 
+            self.DATA.try_now += 1
+
+        for idx in self.DATA.std_dev:
+            print "{}, {}".format(idx, self.DATA.std_dev[idx])
 
 
 if __name__ == '__main__':
