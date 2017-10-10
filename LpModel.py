@@ -69,8 +69,8 @@ class Model(object):
             for j in J:
                 if Luse[i,j] >= Lmax:
                     continue
-                self.MODEL.addConstr(grb.quicksum(X[d,i,j] for d in D if s != d) + Luse[i,j] <= M,
-                                     'CONST::x.{}.{} <= M'.format(i,j))
+                # self.MODEL.addConstr(grb.quicksum(X[d,i,j] for d in D if s != d) + Luse[i,j] <= M, 'CONST::x.{}.{} <= M'.format(i,j))
+                self.MODEL.addConstr(grb.quicksum(X[d,i,j] * Tsig for d in D if s != d) + Luse[i,j] <= M, 'CONST::x.{}.{} <= M'.format(i,j))
 
 if __name__ == '__main__':
     import Data
