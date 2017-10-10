@@ -62,15 +62,19 @@ class Model(object):
                 for j in J:
                     if i == j:
                         continue
-                    self.MODEL.addConstr(X[d,i,j] * Tsig >= 0, 'CONST::traff_x.{}.{}.{}>=0'.format(d,i,j))
-                    self.MODEL.addConstr(X[d,i,j] * Tsig + Luse[i,j] <= Lmax, 'CONST::traff_x.{}.{}.{}<=MAX'.format(d,i,j))
+                    self.MODEL.addConstr(X[d,i,j] * Tsig >= 0, 
+                                         'CONST::traff_x.{}.{}.{}>=0'.format(d,i,j))
+                    self.MODEL.addConstr(X[d,i,j] * Tsig + Luse[i,j] <= Lmax, 
+                                         'CONST::traff_x.{}.{}.{}<=MAX'.format(d,i,j))
 
         for i in I:
             for j in J:
                 if Luse[i,j] >= Lmax:
                     continue
-                # self.MODEL.addConstr(grb.quicksum(X[d,i,j] for d in D if s != d) + Luse[i,j] <= M, 'CONST::x.{}.{} <= M'.format(i,j))
-                self.MODEL.addConstr(grb.quicksum(X[d,i,j] * Tsig for d in D if s != d) + Luse[i,j] <= M, 'CONST::x.{}.{} <= M'.format(i,j))
+                # self.MODEL.addConstr(grb.quicksum(X[d,i,j] for d in D if s != d) + Luse[i,j] <= M, 
+                #                      'CONST::x.{}.{} <= M'.format(i,j))
+                self.MODEL.addConstr(grb.quicksum(X[d,i,j] * Tsig for d in D if s != d) + Luse[i,j] <= M,
+                                    'CONST::x.{}.{} <= M'.format(i,j))
 
 if __name__ == '__main__':
     import Data
