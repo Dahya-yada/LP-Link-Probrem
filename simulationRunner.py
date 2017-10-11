@@ -8,7 +8,7 @@
 import Simulation as Simu
 import Network
 import Data
-import LpModel
+import Model
 
 class Runner(object):
     """
@@ -17,12 +17,13 @@ class Runner(object):
     def __init__(self, o_data, o_model):
         self.DATA  = o_data
         self.MODEL = o_model
-        self.SIMU  = Simu.Simulation(o_data, o_model)
+        self.SIMU  = Simu.Simulation(o_data.graph, o_data, o_model)
 
     def run(self):
         while self.DATA.try_now < self.DATA.try_num:
             print "--- {} ---".format(self.DATA.try_now + 1)
             self.SIMU.solve()
+            #print self.DATA.x_sig
             self.DATA.try_now += 1
 
         for idx in self.DATA.std_dev:
@@ -40,6 +41,6 @@ if __name__ == '__main__':
 
     graph  = Network.Topology(node, site, connects=3)
     data   = Data.Data(graph, link_max, sig_max, sig_div, vm_add)
-    model  = LpModel.Model(data)
+    model  = Model.Model(data)
     runner = Runner(data,model)
     runner.run()

@@ -11,8 +11,8 @@ class Data(object):
     """
     線形計画法に使用するデータ
     """
-    def __init__(self, graph, bandwidth_max, signal_traffic_max, signal_division, vm_add_num):
-        self.graph   = graph
+    def __init__(self, o_graph, bandwidth_max, signal_traffic_max, signal_division, vm_add_num):
+        self.graph   = o_graph
         self.try_num = vm_add_num
         self.try_now = 0
 
@@ -21,7 +21,7 @@ class Data(object):
         self.signal_div    = signal_division
         self.signal_unit   = signal_traffic_max / signal_division
         self.signal_lb     = self.signal_unit
-        self.signal_site   = 0
+        self.signal_vm     = 0
 
         self.link_x = self.graph.make_link_list()
         self.x_sig  = self.graph.make_link_dict()
