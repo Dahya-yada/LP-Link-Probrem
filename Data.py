@@ -16,23 +16,20 @@ class Data(object):
         self.try_num = vm_add_num
         self.try_now = 0
 
-        self.bandwidth_max      = bandwidth_max
-        self.signal_traffic_max = signal_traffic_max
-        self.signal_division    = signal_division
-        self.signal_unit        = signal_traffic_max / signal_division
-        self.signal_now         = self.signal_unit
-        self.signal_site        = 0
+        self.bandwidth_max = bandwidth_max
+        self.signal_max    = signal_traffic_max
+        self.signal_div    = signal_division
+        self.signal_unit   = signal_traffic_max / signal_division
+        self.signal_lb     = self.signal_unit
+        self.signal_site   = 0
 
-        self.links_x     = self.graph.make_link_list()
-        self.x_sig       = self.graph.make_link_dict()
-        self.x_cpy       = self.graph.make_link_dict()
-        self.sites_x_tmp = self.make_num_sites_link_dict()
-        self.solve_x     = self.make_link_matrix()
+        self.link_x = self.graph.make_link_list()
+        self.x_sig  = self.graph.make_link_dict()
+        self.x_cpy  = self.graph.make_link_dict()
 
-        self.sites_list  = copy.deepcopy(self.graph.site_list)
+        # self.sites_list  = copy.deepcopy(self.graph.site_list)
         self.vm_num      = {k: 0 for k in self.graph.site_list}
 
-        self.sed_dev_tmp = {k: 0 for k in self.graph.site_list}
         self.std_dev     = {k + 1: 0 for k in range(vm_add_num)}
 
     def make_link_matrix(self):
