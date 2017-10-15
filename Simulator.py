@@ -22,8 +22,8 @@ class Simulator(object):
         self.t_sig_tmp = signal_traffic_max / signal_division
         self.try_num   = vm_add_num
         self.try_now   = 0
-        self.vm_num    = {s: 0 for s in Graph.site_list}
-        self.std_dev   = {n: 0 for n in vm_add_num}
+        self.vm_num    = {s: 0 for s in self.Graph.site_list}
+        self.std_dev   = {n: 0 for n in range(vm_add_num)}
 
         self.x_sig           = {l: 0 for l in self.Graph.link_list}
         self.x_sig_s         = {s: {l :0 for l in self.Graph.link_list} for s in self.Graph.site_list}
@@ -61,7 +61,7 @@ class Simulator(object):
                     tmp[l] += self.x_sig_s[ss][l]
         self.sig_solve[s] = copy.deepcopy(tmp)
 
-    def make_x_sig_matrix(self)
+    def make_x_sig_matrix(self):
         """
         x_sig_matrixを生成する．
         """
@@ -130,7 +130,6 @@ class Simulator(object):
 
 if __name__ == '__main__':
     import Network
-    import Data
     import Model
 
     node     = 30
