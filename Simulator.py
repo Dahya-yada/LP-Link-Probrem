@@ -31,11 +31,30 @@ class Simulator(object):
         self.x_sig_matrix    = {}
         self.x_sig_allocated = {s: {l :0 for l in self.Graph.link_list} for s in self.Graph.site_list}
 
+        self.v_M = {}
+
     def solve(self):
         """
         1回だけ線形計画法による最適化を行う．
         """
-        pass
+        self.change_allocated_link()
+        self.v_M = {}
+        for s in self.Graph.site_list:
+            self.make_sig_solve(s)
+            self.make_x_sig_matrix(s)
+            self.Model.make_model(s, self.link_max, self.x_sig_matrix, self.make_sig_vm(s))
+            self.Model.optimize(s, "yes")
+            self.v_M[s] = int(self.Model.M.x)
+            self.make_x_sig_allocated(s)
+            self.update_x_sig_solve(s)
+        d_site = self.decide_add_site()
+        print "[ADD SITE]", d_site
+        self.update_x_sig_s(d_site)
+        self.vm_num[d_site] += 1
+        self.update_x_sig(s)
+        #print self.x_sig
+        print ""
+
 
     def change_allocated_link(self):
         """
@@ -59,29 +78,37 @@ class Simulator(object):
                     tmp[l] += self.x_sig_s[ss][l] * weight
                 else:
                     tmp[l] += self.x_sig_s[ss][l]
-        self.sig_solve[s] = copy.deepcopy(tmp)
+        self.x_sig_solve[s] = copy.deepcopy(tmp)
 
-    def make_x_sig_matrix(self):
+    def make_sig_vm(self, s):
+        """
+        新しいVMが担当する信号量（線形計画法計算用）
+        """
+        return self.t_sig_lb / self.Graph.site_num
+
+    def make_x_sig_matrix(self, s):
         """
         x_sig_matrixを生成する．
         """
-        n   = self.graph.node_num
+        n   = self.Graph.node_num
         tmp = {(i, j): self.link_max for i in range(n) for j in range(n)}
         for l in self.Graph.link_list:
-            tmp[l[0], l[1]] = self.sig_solve[s][l[0], l[1]]
-            tmp[l[1], l[0]] = self.sig_solve[s][l[0], l[1]]
+            tmp[l[0], l[1]] = self.x_sig_solve[s][l[0], l[1]]
+            tmp[l[1], l[0]] = self.x_sig_solve[s][l[0], l[1]]
         self.x_sig_matrix = copy.deepcopy(tmp)
 
     def make_x_sig_allocated(self, s):
         """
         x_sig_allocatedを作成する．
         """
-        tmp = {l :0 for l in self.Graph.link_list}
+        tmp = {l: 0 for l in self.Graph.link_list}
         trf = 1.0 * self.t_sig_lb / self.Graph.site_num / (self.vm_num[s] + 1)
         for d in self.Graph.site_list:
-            for l in self.Graph.link_list:
-                self.tmp[l] += self.Model.X[d, l[0], l[1]] * trf
-                self.tmp[l] += self.Model.X[d, l[0], l[1]] * trf
+            for l in self.Model.non_loop_route[d]:
+                if (l[0], l[1]) in tmp:
+                    tmp[l[0], l[1]] += trf
+                if (l[1], l[0]) in tmp:
+                    tmp[l[1], l[0]] += trf
         self.x_sig_allocated[s] = copy.deepcopy(tmp)
     
     def update_x_sig_solve(self, s):
@@ -95,19 +122,20 @@ class Simulator(object):
         """
         VMを追加する拠点を決定する．
         """
+        d_site = min(self.v_M.items(), key=lambda x: x[1])[0]
         std_dev = {s: numpy.std(self.x_sig_solve[s].values()) for s in self.Graph.site_list}
-        d_site  = min(std_dev.items(), key=lambda x: x[1])[0]
+        # d_site  = min(std_dev.items(), key=lambda x: x[1])[0]
         self.std_dev[self.try_now] = std_dev[d_site]
         return d_site
 
     def update_x_sig_s(self, s):
         """
-        x_sig_sを更新する．
+        x_sig_sを決定したVM追加拠点sで更新する．
         """
         weight = 1.0 * self.vm_num[s] / (self.vm_num[s] + 1)
-        for l in self.Graph.site_list:
+        for l in self.Graph.link_list:
             self.x_sig_s[s][l] *= weight
-        for l in self.Graph.site_list:
+        for l in self.Graph.link_list:
             self.x_sig_s[s][l] += self.x_sig_allocated[s][l]
     
     def update_x_sig(self, s):
@@ -115,7 +143,6 @@ class Simulator(object):
         x_sigを更新する．
         """
         self.x_sig = copy.deepcopy(self.x_sig_solve[s])
-
 
 
 
@@ -143,5 +170,7 @@ if __name__ == '__main__':
     graph = Network.Topology(node, site, connects=3)
     model = Model.Model(graph)
     simu  = Simulator(graph, model, link_max, sig_max, sig_div, vm_add)
+    for i in range(5):
+        simu.solve()
 
     
