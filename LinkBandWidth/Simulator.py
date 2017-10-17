@@ -71,6 +71,8 @@ class Simulator(object):
         """
         tmp    = {l :0 for l in self.Graph.link_list}
         weight = self.vm_num[s] / (self.vm_num[s] + 1)
+        if weight == 0:
+            weight = 1
 
         for ss in self.Graph.site_list:
             for l in self.Graph.link_list:
@@ -96,6 +98,11 @@ class Simulator(object):
             tmp[l[0], l[1]] = self.x_sig_solve[s][l[0], l[1]]
             tmp[l[1], l[0]] = self.x_sig_solve[s][l[0], l[1]]
         self.x_sig_matrix = copy.deepcopy(tmp)
+
+        for i,j in self.Graph.both_link_list:
+            if tmp[i,j] > 0:
+                print "{}:{}".format((i,j),tmp[i,j]),
+        print ""
 
     def make_x_sig_allocated(self, s):
         """
@@ -160,8 +167,8 @@ if __name__ == '__main__':
     import Model
 
     node     = 30
-    site     = 5
-    connect  = 3
+    site     = 2
+    connect  = 5
     link_max = 20 * 1024 * 1024
     sig_max  = 4 * 20000
     sig_div  = 20
