@@ -112,7 +112,7 @@ class Simulator(object):
         trf = 1.0 * self.t_sig_lb / self.Graph.site_num / (self.vm_num[s] + 1)
         for d in self.Graph.site_list:
             for l in self.Model.non_loop_route[d]:
-                if (l[0], l[1]) in tmp:
+self, o_graph, o_model, bandwidth_max, signal_traffic_max, signal_division, vm_add_num                if (l[0], l[1]) in tmp:
                     tmp[l[0], l[1]] += trf
                 if (l[1], l[0]) in tmp:
                     tmp[l[1], l[0]] += trf
