@@ -22,11 +22,13 @@ class Simulator(object):
         self.link_num    = link_num_max
         self.trial_num   = vm_add_num
 
-        self.x_sig      = {l: 0 for l in self.Graph.link_list}
-        self.x_sig_trf  = {s: 0 for s in self.Graph.site_list}
-        self.vm_num     = {s: 0 for s in self.Graph.site_list}
-        self.x_sig_num  = {s: {l: 0 for l in self.Graph.link_list} for s in self.Graph.site_list}
-        self.x_sig_link = {s: {l: 0 for l in self.Graph.link_list} for s in self.Graph.site_list}
+        self.x_sig       = {l: 0 for l in self.Graph.link_list}
+        self.x_sig_trf   = {s: 0 for s in self.Graph.site_list}
+        self.x_sig_m     = {s: 0 for s in self.Graph.site_list}
+        self.vm_num      = {s: 0 for s in self.Graph.site_list}
+        self.x_sig_num   = {s: {l: 0 for l in self.Graph.link_list} for s in self.Graph.site_list}
+        self.x_sig_num_s = {s: {l: 0 for l in self.Graph.link_list} for s in self.Graph.site_list}
+        self.x_sig_solve = {s: {l: 0 for l in self.Graph.link_list} for s in self.Graph.site_list}
     
     def solve(self):
         """
@@ -37,6 +39,8 @@ class Simulator(object):
             self.Model.make_model(s,self.link_num, matrix)
             self.Model.make_route(s)
             self.Model.show_route()
+            self.make_x_sig_solve(s)
+            self.x_sig_m[s] = int(self.Model.M.x)
 
     def make_link_num_matrix(self):
         """
@@ -52,7 +56,20 @@ class Simulator(object):
             tmp[j, i] = int(self.x_sig_num[i, j])
         return tmp
 
-    def    
+    def make_x_sig_solve(self, s):
+        """
+        最適化結果をx_sig_solve[s]に保存する．
+        """
+        tmp = {(i,j): 0 for i,j in self.o_graph.link_list}
+        for d in self.o_model.route:
+            for i,j in tmp:
+                if (i,j) in self.o_model.route[d]:
+                    tmp[i,j] += 1
+                if (j,i) in self.o_model.route[d]:
+                    tmp[i,j] += 1
+        self.x_sig_solve[s] = copy.deepcopy(tmp)
+
+
 
 
 
