@@ -26,7 +26,7 @@ class Simulator(object):
         self.x_sig_trf   = {s: 0 for s in self.Graph.site_list}
         self.x_sig_m     = {s: 0 for s in self.Graph.site_list}
         self.vm_num      = {s: 0 for s in self.Graph.site_list}
-        self.x_sig_num   = {s: {l: 0 for l in self.Graph.link_list} for s in self.Graph.site_list}
+        self.x_sig_num   = {l: 0 for l in self.Graph.link_list}
         self.x_sig_num_s = {s: {l: 0 for l in self.Graph.link_list} for s in self.Graph.site_list}
         self.x_sig_solve = {s: {l: 0 for l in self.Graph.link_list} for s in self.Graph.site_list}
     
@@ -36,9 +36,7 @@ class Simulator(object):
         """
         for s in self.Graph.site_list:
             matrix = self.make_link_num_matrix()
-            self.Model.make_model(s,self.link_num, matrix)
-            self.Model.make_route(s)
-            self.Model.show_route()
+            self.Model.optimize(s, self.link_num, matrix, 'y')
             self.make_x_sig_solve(s)
             self.x_sig_m[s] = int(self.Model.M.x)
 
@@ -47,7 +45,7 @@ class Simulator(object):
         線形計画法に使う，[i,j] = 割当リンク数 のマトリックスを生成する．
         """
         n   = self.Graph.node_num
-        tmp = {(i,j): self.link_num * 10 for i in range(n) for j in range(n)}
+        tmp = {(i,j): self.link_num for i in range(n) for j in range(n)}
 
         for l   in self.Graph.both_link_list:
             tmp[l] = 0
@@ -60,12 +58,12 @@ class Simulator(object):
         """
         最適化結果をx_sig_solve[s]に保存する．
         """
-        tmp = {(i,j): 0 for i,j in self.o_graph.link_list}
-        for d in self.o_model.route:
+        tmp = {(i,j): 0 for i,j in self.Graph.link_list}
+        for d in self.Model.route:
             for i,j in tmp:
-                if (i,j) in self.o_model.route[d]:
+                if (i,j) in self.Model.route[d]:
                     tmp[i,j] += 1
-                if (j,i) in self.o_model.route[d]:
+                if (j,i) in self.Model.route[d]:
                     tmp[i,j] += 1
         self.x_sig_solve[s] = copy.deepcopy(tmp)
 
@@ -79,7 +77,7 @@ if __name__ == '__main__':
     import Model
 
     node         = 30
-    site         = 2
+    site         = 3
     connect      = 5
     link_num_max = 100
     link_max     = 20 * 1024 * 1024
@@ -90,3 +88,4 @@ if __name__ == '__main__':
     graph = Network.Topology(node, site, connects=3)
     model = Model.Model(graph)
     simu  = Simulator(graph, model, link_max, link_num_max, sig_max, sig_div, vm_add)
+    simu.solve()
