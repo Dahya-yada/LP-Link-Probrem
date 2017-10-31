@@ -11,6 +11,7 @@ CREATE:  2017/02/14
 import random as rand
 import networkx as nx
 import pylab
+import matplotlib.pyplot as plt
 
 
 class Topology(object):
@@ -28,7 +29,7 @@ class Topology(object):
         self.nw_type  = types
 
         self.GRAPH    = self.make_graph(nodes, connects, probability, types)
-        self.G_POS    = nx.spring_layout(self.GRAPH)
+        self.G_POS    = nx.spring_layout(self.GRAPH, k=0.3)
 
         self.site_list      = self.make_site_list()
         self.link_list      = self.make_link_list()
@@ -114,7 +115,7 @@ class Topology(object):
 
     def generate_images(self, g=None,
                         first=True, save=True, filename='Toporogy.svg',
-                        costList=None, maxCost=1000):
+                        costList=None,):
         """
         グラフのイメージを生成する．
         :param g: NetworkXグラフオブジェクト
@@ -136,23 +137,25 @@ class Topology(object):
         if g is None:
             g = self.GRAPH
 
-        pylab.figure(figsize=(fig_x, fig_y))
-        pylab.xticks([])
-        pylab.yticks([])
+        plt.figure(figsize=(fig_x, fig_y))
+        plt.xticks([])
+        plt.yticks([])
 
-        if first:
-            cMask = [eColor if n in self.site_list else nColor for n in range(self.node_num)]
-            nx.draw_networkx_nodes (g, self.G_POS, node_size=nSize, node_color=cMask)
-            nx.draw_networkx_edges (g, self.G_POS, width=linkWidth)
-            nx.draw_networkx_labels(g, self.G_POS, font_size=fSize, font_family=fFamily)
-        else:
-            lWidth = [costList[k[0]][k[1]] * 20 /maxCost for k in self.link_list]
-            nx.draw_networkx_edges(g, self.G_POS, width=lWidth)
+        cMask = [eColor if n in self.site_list else nColor for n in range(self.node_num)]
+        nx.draw_networkx_nodes (g, self.G_POS, node_size=nSize, node_color=cMask)
+        nx.draw_networkx_edges (g, self.G_POS, width=linkWidth, edge_color='k', alpha=0.4)
+        nx.draw_networkx_labels(g, self.G_POS, font_size=fSize, font_family=fFamily)
+
+        if first is False:
+            max_cost  = max(costList.values())
+            lWidth = [5 * costList[i,j] /max_cost for i,j in self.GRAPH.edges()]
+            lcolor = [(1.0 * costList[i,j] / max_cost, 0, 1 - 1.0 * costList[i,j] / max_cost) for i,j in self.GRAPH.edges()]
+            nx.draw_networkx_edges(g, self.G_POS, width=lWidth, edge_color=lcolor)
 
         if save:
-            pylab.savefig(filename)
+            plt.savefig(filename)
         else:
-            pylab.show()
+            plt.show()
 
 
 # FOR TEST
