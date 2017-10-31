@@ -51,7 +51,7 @@ class Simulator(object):
         print "[ADD SITE]", d_site
         self.update_x_sig_s(d_site)
         self.vm_num[d_site] += 1
-        self.update_x_sig(s)
+        self.update_x_sig()
         #print self.x_sig
         print ""
 
@@ -112,7 +112,7 @@ class Simulator(object):
         trf = 1.0 * self.t_sig_lb / self.Graph.site_num / (self.vm_num[s] + 1)
         for d in self.Graph.site_list:
             for l in self.Model.non_loop_route[d]:
-self, o_graph, o_model, bandwidth_max, signal_traffic_max, signal_division, vm_add_num                if (l[0], l[1]) in tmp:
+                if (l[0], l[1]) in tmp:
                     tmp[l[0], l[1]] += trf
                 if (l[1], l[0]) in tmp:
                     tmp[l[1], l[0]] += trf
@@ -179,5 +179,6 @@ if __name__ == '__main__':
     simu  = Simulator(graph, model, link_max, sig_max, sig_div, vm_add)
     for i in range(5):
         simu.solve()
+    
 
     
