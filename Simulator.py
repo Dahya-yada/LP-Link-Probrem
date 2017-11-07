@@ -7,6 +7,7 @@
 
 import copy
 import numpy
+import time
 
 class Simulator(object):
     """
@@ -30,41 +31,58 @@ class Simulator(object):
         self.SITE        = self.Graph.site_list
 
         self.x_sig       = {l: 0 for l in self.L}
+        self.x_sig_num   = {l: 0 for l in self.L}
+        self.x_sig_node  = {n: 0 for n in range(self.N)} 
         self.x_sig_n     = {s: {l: 0 for l in self.L} for s in self.SITE}
         self.x_sig_solve = {s: {l: 0 for l in self.L} for s in self.SITE}
 
         self.mn_sig       = {s: 0 for s in self.SITE}
         self.mb_sig       = {s: 0 for s in self.SITE}
+        self.nn_sig       = {s: 0 for s in self.SITE}
+        self.objval_sig   = {s: 0 for s in self.SITE}
         self.vm_num       = {s: 0 for s in self.SITE}
         self.std          = {n: 0 for n in range(self.try_max)}
+        self.std_num      = {n: 0 for n in range(self.try_max)}
+        self.link_use     = {n: 0 for n in range(self.try_max)}
     
     def solve(self, info=False):
         """
         1回だけ線形計画法を解く
         """
+        time_start  = time.time()
+
         for s in self.SITE:
             traffic = self.sig_site / self.Graph.site_num / (self.vm_num[s] + 1)
             ln_mat  = self.make_x_sig_n_matrix()
             bw_mat  = self.make_x_sig_matrix()
 
-            self.Model.optimize(s, traffic, bw_mat, self.bw_max, ln_mat, self.ln_max)
+            self.Model.optimize(s, traffic, bw_mat, self.bw_max, ln_mat, self.ln_max, self.x_sig_node)
 
             self.make_x_sig_solve(s)
-            self.mb_sig[s] = int(self.Model.Mb.x)
-            self.mn_sig[s] = int(self.Model.Mn.x)
+            self.mb_sig[s]     = int(self.Model.Mb.x)
+            self.mn_sig[s]     = int(self.Model.Mn.x)
+            self.nn_sig[s]     = int(self.Model.NN.x)
+            self.objval_sig[s] = float(self.Model.model.objVal)
         
         detect_s = self.detect_site()
         self.add_to_x_sig_n(detect_s)
         self.update_x_sig()
-        std_no = self.calc_std()
+        self.update_x_sig_node()
+        self.update_link_use()
+        self.calc_std()
         self.try_now += 1
+
+        time_proc = time.time() - time_start
 
         if info:
             info_str  = '#{0:02d},  '.format(self.try_now)
             info_str += '[site],{0:02d},  '.format(detect_s)
-            info_str += '[Mb],{},  '.format(200 * self.mb_sig[s] / self.bw_max)
-            info_str += '[Mn],{},  '.format(self.mn_sig[s])
-            info_str += '[std],{0:.3f},{0:.3f},  '.format(self.std[self.try_now -1], std_no)
+            info_str += '[Mb],{},  '.format(100 * self.mb_sig[s] / self.bw_max)
+            info_str += '[Mn],{},  '.format(100 * self.mn_sig[s] / self.ln_max)
+            info_str += '[MN],{},  '.format(100 * self.nn_sig[s] / self.bw_max)
+            info_str += '[OBJ],{0:3.3f},  '.format(self.objval_sig[s])
+            info_str += '[std],{0:5.3f}, {1:2.3f},  '.format(self.std[self.try_now -1], self.std_num[self.try_now - 1])
+            info_str += '[time (s)],{0:.3f}'.format(time_proc)
             print info_str
 
 
@@ -119,7 +137,9 @@ class Simulator(object):
         """
         VM追加拠点を決定する．
         """
-        li_eval  = {s: self.mb_sig[s] - self.vm_num[s] for s in self.SITE}
+        # li_eval  = {s: (self.mb_sig[s] / self.bw_max * 200) + self.mn_sig[s]  - self.vm_num[s] for s in self.SITE}
+        # li_eval  = {s: (self.mb_sig[s] / self.bw_max * 200) - self.vm_num[s] for s in self.SITE}
+        li_eval  = {s: self.objval_sig[s] - self.vm_num[s] for s in self.SITE}
         add_site = max(li_eval.items(), key=lambda x: x[1])[0]
         self.vm_num[add_site] += 1
 
@@ -141,29 +161,56 @@ class Simulator(object):
         """
         物理リンク帯域を表すx_sigを更新する．
         """
-        tmp = {l: 0 for l in self.L}
+        tmp_b = {l: 0 for l in self.L}
+        tmp_n = {l: 0 for l in self.L}
 
         for s in self.Graph.site_list:
             if self.vm_num[s] == 0:
                 continue
             trf = self.sig_site / self.Graph.site_num / self.vm_num[s]
             for l in self.L:
-                tmp[l] += self.x_sig_n[s][l] * trf
+                tmp_b[l] += self.x_sig_n[s][l] * trf
+                tmp_n[l] += self.x_sig_n[s][l]
         
-        self.x_sig = copy.deepcopy(tmp)
+        self.x_sig     = copy.deepcopy(tmp_b)
+        self.x_sig_num = copy.deepcopy(tmp_n)
+    
+    def update_x_sig_node(self):
+        """
+        NWノードに到達したトラヒックの合計を表すx_sig_nodeを更新する．
+        """
+        tmp = {n: 0 for n in range(self.N)}
+
+        for s in self.Graph.site_list:
+            if self.vm_num[s] == 0:
+                continue
+            trf = self.sig_site / self.Graph.site_num / self.vm_num[s]
+            for i,node in self.L:
+                tmp[node] += self.x_sig_n[s][i, node] * trf
+            
+            self.x_sig_node = copy.deepcopy(tmp)
+    
+    def update_link_use(self):
+        """
+        使用された物理リンク数を更新します．
+        """
+        for l in self.x_sig_num:
+            if self.x_sig_num[l] > 0:
+                self.link_use[self.try_now] += 1
+
 
     def calc_std(self, info=False):
         """
         物理リンクの使用帯域の標準偏差を求める．
         """
-        std_no_s = numpy.std([self.x_sig[i,j] for i,j in self.x_sig if i not in self.Graph.site_list and j not in self.Graph.site_list])
-        std = numpy.std(self.x_sig.values())
+        std_n = numpy.std(self.x_sig_num.values())
+        std   = numpy.std(self.x_sig.values())
+        self.std_num[self.try_now] = float(std_n)
         self.std[self.try_now] = float(std)
 
         if info:
             print '[std dev] {}'.format(std)
-        
-        return std_no_s
+            print '[std_dev_num] {}'.format(std_n)
     
 
 
@@ -176,17 +223,16 @@ if __name__ == '__main__':
     import Network
     import Model
 
-    node         = 100
+    node         = 50
     site         = 10
     connect      = 3
     link_num_max = 100
     link_max     = 20 * 1024 * 1024
     sig_max      = 4 * 20000
     sig_div      = 20
-    vm_add       = 50
-    node         = 50
+    vm_add       = 100
 
-    graph = Network.Topology(node, site, connects=3, probability=0.3, types='powerlaw_cluster')
+    graph = Network.Topology(node, site, connects=connect, probability=0.3, types='powerlaw_cluster')
     model = Model.Model(graph)
     simu  = Simulator(graph, model, link_max, link_num_max, sig_max, sig_div, vm_add)
 

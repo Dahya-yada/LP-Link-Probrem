@@ -10,7 +10,6 @@ CREATE:  2017/02/14
 """
 import random as rand
 import networkx as nx
-import pylab
 import matplotlib.pyplot as plt
 
 
@@ -29,7 +28,8 @@ class Topology(object):
         self.nw_type  = types
 
         self.GRAPH    = self.make_graph(nodes, connects, probability, types)
-        self.G_POS    = nx.spring_layout(self.GRAPH, k=0.3)
+        # self.G_POS    = nx.spring_layout(self.GRAPH,scale=2)
+        self.G_POS    = nx.drawing.nx_agraph.graphviz_layout(self.GRAPH, prog='neato')
 
         self.site_list      = self.make_site_list()
         self.link_list      = self.make_link_list()
@@ -51,6 +51,12 @@ class Topology(object):
             g = nx.barabasi_albert_graph(n, c)
         if t == 'powerlaw_cluster':
             g = nx.powerlaw_cluster_graph(n, c, p)
+        if t == 'gnm_random':
+            g = nx.gnm_random_graph(n,n*c+1, directed=True)
+        if t == 'waxman':
+            g = nx.waxman_graph(n,beta=0.3)
+        if t == 'random_regular':
+            g = nx.random_regular_graph(c,n)
         return g
 
     def make_site_list(self, n=None):
@@ -70,7 +76,7 @@ class Topology(object):
         :return: 接続ノードの組(タプル)のリスト
         :rtype: tlist
         """
-        return self.GRAPH.edges()
+        return list(self.GRAPH.edges())
 
     def make_both_link_list(self):
         """
@@ -125,14 +131,14 @@ class Topology(object):
         :param cpst_list: リンク帯域のリスト
         """
         # CONFIG
-        nSize     = 260
+        nSize     = 100
         eColor    = 'red'
         nColor    = 'white'
         linkWidth = 1
-        fig_x     = 13
-        fig_y     = 8
+        fig_x     = 10
+        fig_y     = 7
         fSize     = 11
-        fFamily   = 'Nimbus Roman No9 L'
+        fFamily   = 'Inconsolata'
 
         if g is None:
             g = self.GRAPH
@@ -142,9 +148,10 @@ class Topology(object):
         plt.yticks([])
 
         cMask = [eColor if n in self.site_list else nColor for n in range(self.node_num)]
-        nx.draw_networkx_nodes (g, self.G_POS, node_size=nSize, node_color=cMask)
+        nodes = nx.draw_networkx_nodes (g, self.G_POS, node_size=nSize, node_color=cMask, linewidths=2.0)
+        nodes.set_edgecolor('k')
         nx.draw_networkx_edges (g, self.G_POS, width=linkWidth, edge_color='k', alpha=0.4)
-        nx.draw_networkx_labels(g, self.G_POS, font_size=fSize, font_family=fFamily)
+        # nx.draw_networkx_labels(g, self.G_POS, font_size=fSize, font_family=fFamily)
 
         if first is False:
             max_cost  = max(costList.values())
@@ -160,7 +167,7 @@ class Topology(object):
 
 # FOR TEST
 if __name__ == "__main__":
-    graph = Topology(20, 5, 2, 0.8, 'BA')
+    graph = Topology(50, 10, 3, 0.8, 'random_regular')
     print "拠点："
     print graph.make_site_list()
     print "リンク："
