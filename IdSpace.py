@@ -59,10 +59,9 @@ class Space(object):
                 i += 1
 
             self.step += 1
-        
-        if site == 'INTERM':
-            self.vm_num_id.append([site,vm_id])
-        else:
+
+        self.vm_num_id.append([site,vm_id])
+        if site != 'INTERM':
             self.vm_id[site] += 1
     
     def decide_interm_site(self, site):
@@ -71,14 +70,14 @@ class Space(object):
         """
         for k in self.interm_node:
             self.locate[k][0] = int(site)
-            self.locate[k][1] = int(self.vm_id[s])
+            self.locate[k][1] = int(self.vm_id[site])
         
         pop_vm_num_id = self.vm_num_id.pop()
         pop_vm_num_id[0] = int(site)
-        pop_vm_num_id[1] = int(self.vm_num_id[s])
+        pop_vm_num_id[1] = int(self.vm_id[site])
         self.vm_num_id.append(pop_vm_num_id)
 
-        self.vm_id[s] += 1
+        self.vm_id[site] += 1
         self.interm_node = []
     
     def get_right_node(self, site='INTERM',vm='Unknown'):
@@ -101,13 +100,23 @@ class Space(object):
 
         return site_list
 
+    def get_right_node_by_id(self, id_num):
+        """
+        あるVMの仮想ノードの右隣の仮想ノード数を返す．
+        VM追加番号で検索する．
+        """
+        if id_num is None:
+            return self.get_right_node()
+        else:
+            s, v = self.vm_num_id[id_num]
+            return self.get_right_node(s, v)
+
     def show_image(self):
         """
         ID空間と仮想ノード配置図を表示します．
         """
         value = []
         label = []
-        color = []
         loc   = sorted(self.locate.keys())
         dif_v = 0
         for k in loc:
@@ -123,11 +132,10 @@ class Space(object):
         plt.show()
 
 
-
-
-        
-
 class IsIntermNodeError(Exception):
+    """
+    拠点が不明な仮想ノードがID空間上に存在するときのエラー
+    """
     def __init__(self, value):
         self.value = value
     
@@ -137,12 +145,13 @@ class IsIntermNodeError(Exception):
 
 if __name__ == '__main__':
     space = Space([1,2,3], 128, 20)
-    space.add_vm(1)
-    space.add_vm(2)
-    space.add_vm(3)
-    space.add_vm(1)
-    space.add_vm(2)
-    space.add_vm(3)
     space.add_vm()
-    print space.get_right_node(2,0)
+    # space.add_vm(3)
+    # space.add_vm(1)
+    # space.add_vm(2)
+    # space.add_vm(3)
+    # space.add_vm()
+    # space.decide_interm_site(1)
+    print space.get_right_node()
+    print space.vm_num_id
     space.show_image()
