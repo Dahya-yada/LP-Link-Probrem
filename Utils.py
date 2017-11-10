@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 # なんかテキスト処理とか便利なやつを呼び出しやすいようにするクラス群
 
-import colorama as col
+from __future__ import print_function
 import time
+import colorama as col
 
 class StrOut(object):
     """
@@ -10,101 +11,95 @@ class StrOut(object):
     """
 
     @staticmethod
-    def blue(string, newline=True):
+    def blue(string, end='\n'):
         """
         色: Blueで標準出力に文字列stringを出力します．
 
         >>> StrOut.blue('String')
         String # Fore color is blue
         """
-        if newline:
-            print col.Fore.BLUE + string + col.Fore.RESET
-        else
-            print col.Fore.BLUE + string + col.Fore.RESET,
+        print(col.Fore.BLUE + string + col.Fore.RESET, end=end)
     
     @staticmethod
-    def green(string):
+    def green(string, end='\n'):
         """
         色: Greenで標準出力に文字列stringを出力します．
 
         >>> StrOut.green('String')
         String # Fore color is green
         """
-        if newline:
-            print col.Fore.GREEN + string + col.Fore.RESET
-        else
-            print col.Fore.GREEN + string + col.Fore.RESET,
+        print(col.Fore.GREEN + string + col.Fore.RESET, end=end)
     
     @staticmethod
-    def yellow(string):
+    def yellow(string, end='\n'):
         """
         色: Yellowで標準出力に文字列stringを出力します．
 
-        >>> StrOut.blue('String')
+        >>> StrOut.yellow('String')
         String # Fore color is yellow
         """
-        if newline:
-            print col.Fore.YELLOW + string + col.Fore.RESET
-        else
-            print col.Fore.YELLOW + string + col.Fore.RESET,
+        print(col.Fore.YELLOW + string + col.Fore.RESET, end=end)
     
     @staticmethod
-    def magenta(string):
+    def magenta(string, end='\n'):
         """
         色: Magentaで標準出力に文字列stringを出力します．
 
-        >>> StrOut.blue('String')
+        >>> StrOut.magenta('String')
         String # Fore color is magenta
         """
-        if newline:
-            print col.Fore.MAGENTA + string + col.Fore.RESET
-        else
-            print col.Fore.MAGENTA + string + col.Fore.RESET,
+        print(col.Fore.MAGENTA + string + col.Fore.RESET, end=end)
 
-    staticmethod
-    def cyan(string):
+    @staticmethod
+    def cyan(string, end='\n'):
         """
         色: Cyanで標準出力に文字列stringを出力します．
 
-        >>> StrOut.blue('String')
+        >>> StrOut.cyan('String')
         String # Fore color is cyan
         """
-        if newline:
-            print col.Fore.CYAN + string + col.Fore.RESET
-        else
-            print col.Fore.CYAN + string + col.Fore.RESET,
+        print(col.Fore.CYAN + string + col.Fore.RESET, end=end)
 
-    staticmethod
-    def red(string):
+    @staticmethod
+    def red(string, end='\n'):
         """
         色: Redで標準出力に文字列stringを出力します．
 
-        >>> StrOut.blue('String')
+        >>> StrOut.red('String')
         String # Fore color is red
         """
-        if newline:
-            print col.Fore.RED + string + col.Fore.RESET
-        else
-            print col.Fore.RED + string + col.Fore.RESET,
+        print(col.Fore.RED + string + col.Fore.RESET, end=end)
     
 
 class Timer(object):
     """
-    時間を計測する関数群
+    時間を計測する関数群です．
+    このクラスをインスタンス化すると時間の計測を開始します．
     """
-    def __init__(self)
+    def __init__(self):
         self.start_time = 0
         self.finish_time = 0
         self.start()
     
     def start(self):
+        """
+        時間の計測を開始します．
+        このクラスのインスタンス変数start_timeに開始時刻を格納します．
+        """
         self.start_time = time.time()
     
     def finish(self):
+        """
+        時間の計測を終了すします．計測開始から終了までの時間を取得します．
+        このクラスのインスタンス変数finish_timeに終了時刻を格納します
+        """
         self.finish_time = time.time()
         return self.finish_time - self.start_time
 
     def get_time(self):
-        self.finish_time = time.time()
-        return self.finish_time - self.start_time
+        """
+        計測開始からの経過時間を取得します．
+        このクラスのインスタンス変数finish_timeに時刻を格納しません．
+        """
+        return time.time() - self.start_time
 

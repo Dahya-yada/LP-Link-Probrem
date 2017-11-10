@@ -7,7 +7,6 @@
 
 import copy
 import numpy
-import time
 import Utils
 
 class Simulator(object):
@@ -46,7 +45,7 @@ class Simulator(object):
 
         for s in self.graph.site_list:
             timer2 = Utils.Timer()
-            self.model.optimize(s, self.get_sig_traffic(s), self.get_cp_traffic()[s],
+            self.model.optimize(s, self.get_sig_traffic(s, is_next=True), self.get_cp_traffic(is_next=True)[s],
                                 self.get_lb_matrix(), self.lb_max, self.get_ln_matrix(), self.ln_max,
                                 self.get_node_spent_matrix())
             
@@ -57,10 +56,10 @@ class Simulator(object):
         sから他の拠点に転送する信号トラヒックを取得します．
         """
         if is_next:
-            t = self.t_sig / (vm_num[s] + 1) / self.graph.site_list
+            trf = self.t_sig / (self.vm_num[s] + 1) / self.graph.site_num
         else:
-            t = self.t_sig / vm_num[s] / self.graph.site_list
-        return t
+            trf = self.t_sig / self.vm_num[s] / self.graph.site_list_num
+        return trf
 
     def get_cp_traffic(self, vm_id=None, is_next=False):
         """
@@ -70,12 +69,16 @@ class Simulator(object):
         node_all  = sum(node_list.values())
         t_list  = {s: 0 for s in self.graph.site_list}
 
-        for s in trf_list:
-            if is_next:
-                t = (self.t_cp / (self.vm_num[s] + 1)) * (node_list[s] / node_all)
+        for s in t_list:
+            if node_list[s] > 0:
+                trf_ratio = 1.0 / self.graph.site_num
             else:
-                t = (self.t_cp / self.vm_num[s]) * (node_list[s] / node_all)
-            t_list[s] += t
+                trf_ratio = 1.0 * node_list[s] / node_all
+            if is_next:
+                trf = trf_ratio * self.t_cp / (self.vm_num[s] + 1)
+            else:
+                trf = trf_ratio * self.t_cp / self.vm_num[s]
+            t_list[s] += trf
         return t_list
 
     def get_lb_matrix(self):
@@ -154,9 +157,9 @@ class Simulator(object):
 
         if info:
             print "DECIDED SITE",
-            Utils.StrOut.green('  [SITE]: ', False)
+            Utils.StrOut.green('  [SITE]: ', end='')
             print decided
-            Utils.StrOut.green('  [OBJ VAL]:  ', False)
+            Utils.StrOut.green('  [OBJ VAL]:  ', end='')
             print (eval_list[decided])
 
         return decided 
@@ -214,7 +217,6 @@ class Simulator(object):
         """
         試行回数t回目の使用物理リンク数を更新します．
         """
-        d_new = {n: 0 for n in range(self.try_m)}
         for l in self.x_num:
             if self.x_num[l] > 0:
                 self.use_link[t] += 1
@@ -230,9 +232,9 @@ class Simulator(object):
 
         if info:
             print 'STANDARD DEVIATION',
-            Utils.StrOut.green('  [BAND]: ', False)
+            Utils.StrOut.green('  [BAND]: ', end='')
             print std_b,
-            Utils.StrOut.green('  [NUM]: ', False)
+            Utils.StrOut.green('  [NUM]: ', end='')
             print std_n
 
 
