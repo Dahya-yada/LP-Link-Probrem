@@ -49,20 +49,24 @@ class Simulator(object):
         solve_v_o = {s:  0 for s in self.graph.site_list}
         solve_v_l = {s:  0 for s in self.graph.site_list}
         solve_v_n = {s:  0 for s in self.graph.site_list}
+        # Add virtual nodes
+        self.id_space.add_vm()
         # Run simulator for all sites
         for s in self.graph.site_list:
-            # Add virtual nodes
-            self.id_space.add_vm()
             # Run to optimize for linner programming
-            self.model.optimize(s, self.get_sig_traffic(s, is_next=True), self.get_cp_traffic(is_next=True)[s],
+            self.model.optimize(s, self.get_sig_traffic(s, is_next=True), self.get_cp_traffic(s, is_next=True),
                                 self.get_lb_matrix(), self.lb_max, self.get_ln_matrix(), self.ln_max,
-                                self.get_node_spent_matrix())
+                                self.get_node_spent_matrix(), info=False)
             # Process optimized datas
             self.add_x_sig_solve(s, solve_sig)
             self.add_x_cp_solve (s, solve_cpy)
             self.add_decision_var_solve(s, solve_v_o, solve_v_l, solve_v_n)
+            # if information is true:
+            if info:
+                Utils.StrOut.yellow('.', end='')
         # Process datas
-        detect_site = self.decide_site(self, solve_v_o)
+        detect_site = self.decide_site(solve_v_o)
+        self.id_space.decide_interm_site(detect_site)
         self.vm_num[detect_site] += 1
         self.update_x_sig_num(detect_site, solve_sig)
         self.update_x_cp_route(detect_site, self.try_n, solve_cpy)
@@ -72,52 +76,57 @@ class Simulator(object):
         self.update_use_link(self.try_n)
         self.update_std(self.try_n)
         self.try_n += 1
-        
+        # Output information on standard output
         if info:
-            print '{0:3d}回目,'.format(self.try_n + 1), 
+            print '{0:3d}回目,'.format(self.try_n), 
             Utils.StrOut.green('[拠点],', end='')
-            print '{0:2d}, '.format(detect_site),
+            print '{0:2d},  '.format(detect_site),
             Utils.StrOut.green('[V_L],', end='')
-            print '{0:.3f}, '.format(solve_v_l[detect_site]),
+            print '{0:>7.3f},  '.format(100 * solve_v_l[detect_site] / self.lb_max),
             Utils.StrOut.green('[V_N],', end='')
-            print '{0:.3f}, '.format(solve_v_n[detect_site]),
+            print '{0:>7.3f},  '.format(100 * solve_v_n[detect_site] / self.ln_max),
             Utils.StrOut.green('[V_OBJ],', end='')
-            print '{0:.3f}, '.format(self.obj_val[self.try_n - 1] - self.vm_num[detect_site]),
+            print '{0:>7.3f},  '.format(self.obj_val[self.try_n - 1] - self.vm_num[detect_site]),
             Utils.StrOut.green('[STD_L],', end='')
-            print '{0:.3f}, '.format(self.std_bw[self.try_n - 1]),
+            print '{0:>7.3f},  '.format(self.std_bw[self.try_n - 1]),
             Utils.StrOut.green('[STD_N],', end='')
-            print '{0:.3f}'.format(self.std_num[self.try_n - 1])
+            print '{0:>6.3f}   '.format(self.std_num[self.try_n - 1]),
+            Utils.StrOut.yellow('[Time],', end='')
+            print '{0:>5.2f}   '.format(timer.get_time())
 
 
     def get_sig_traffic(self, s, is_next=False):
         """
         sから他の拠点に転送する信号トラヒックを取得します．
         """
+        
         if is_next:
             trf = self.t_sig / (self.vm_num[s] + 1) / self.graph.site_num
+        elif self.vm_num[s] == 0:
+            trf = 0
         else:
-            trf = self.t_sig / self.vm_num[s] / self.graph.site_list_num
+            trf = self.t_sig / self.vm_num[s] / self.graph.site_num
         return trf
 
-    def get_cp_traffic(self, vm_id=None, is_next=False):
+    def get_cp_traffic(self, s, vm_id=None, is_next=False):
         """
-        vm_idのMVが他の拠点に転送する複製トラヒックを取得します．
+        拠点sにあるvm_idのMVが他の拠点に転送する複製トラヒックを取得します．
         """
-        node_list = self.id_space.get_right_node_by_id(vm_id)
-        node_all  = sum(node_list.values())
-        t_list  = {s: 0 for s in self.graph.site_list}
-
-        for s in t_list:
-            if node_list[s] <= 0:
+        n_list = self.id_space.get_right_node_by_id(vm_id)
+        n_all  = sum(n_list.values())
+        t_list = {s:0 for s in self.graph.site_list}
+        
+        for d in t_list:
+            if n_list[d] == 0:
                 trf_ratio = 1.0 / self.graph.site_num
             else:
-                trf_ratio = 1.0 * node_list[s] / node_all
+                trf_ratio = 1.0 * n_list[d] / n_all
+
             if is_next:
                 trf = trf_ratio * self.t_cp / (self.vm_num[s] + 1)
             else:
-                trf = trf_ratio * self.t_cp / self.vm_num[s]
-            t_list[s] += trf
-        print t_list
+                trf = trf_ratio * self.t_cp / self.vm_num[s] 
+            t_list[d] += trf
         return t_list
 
     def get_lb_matrix(self):
@@ -137,7 +146,7 @@ class Simulator(object):
         """
         線形計画法に必要な消費リンク数を表すマトリックス(ln_now)を生成します．
         """
-        ln_mat = {(i, j): self.lb_max for i in range(self.graph.node_num) for j in range(self.graph.node_num)}
+        ln_mat = {(i, j): self.ln_max for i in range(self.graph.node_num) for j in range(self.graph.node_num)}
         for i, j in self.graph.link_list:
             ln_mat[i,j] = 0
             ln_mat[j,i] = 0
@@ -153,6 +162,7 @@ class Simulator(object):
         node_mat = {n: 0 for n in range(self.graph.node_num)}
         for i, j in self.graph.link_list:
             node_mat[j] += self.x_bw[i,j]
+        return node_mat
 
     def add_x_sig_solve(self, s, solve_data):
         """
@@ -172,9 +182,7 @@ class Simulator(object):
         最適化した決定変数Yの値を引数solve_dataに追加します．
         """
         d_new = {}
-        for d in self.model.route_cp:
-            if s == d:
-                continue
+        for d in self.model.route_cp[s]:
             d_new[d] = copy.deepcopy(self.model.route_cp[s][d])
         solve_data[s] = copy.deepcopy(d_new)
 
@@ -183,8 +191,8 @@ class Simulator(object):
         最適化した決定変数の値をo_data, l_data, n_dataに代入します．
         """
         o_data[s] = float(self.model.model.objval)
-        l_data[s] = float(self.model.L)
-        n_data[s] = float(self.model.N)
+        l_data[s] = float(self.model.L.x)
+        n_data[s] = float(self.model.N.x) 
 
     def decide_site(self, o_data, info=False):
         """
@@ -220,7 +228,8 @@ class Simulator(object):
         solve_dataに基づいてインスタンス変数x_cp_numを更新します．
         """
         for d in solve_data:
-            self.x_cp_route[(vm_id, s, d)] = solve_data[s][d]
+            if s != d:
+                self.x_cp_route[(vm_id, s, d)] = solve_data[s][d]
 
     def update_x_bw(self):
         """
@@ -233,12 +242,12 @@ class Simulator(object):
             for l in d_new:
                 d_new[l] += self.x_sig_num[s][l] * t
         for vi, s, d in self.x_cp_route:
-            t = self.get_cp_traffic(vi)
+            t = self.get_cp_traffic(s, vi)
             for i, j in self.x_cp_route[(vi, s, d)]:
                 if (i, j) in d_new:
-                    d_new[i, j] += t
+                    d_new[(i, j)] += t[d]
                 if (j, i) in d_new:
-                    d_new[j,i] += t
+                    d_new[(j, i)] += t[d]
         self.x_bw = copy.deepcopy(d_new)
 
     def update_x_num(self):
@@ -303,4 +312,5 @@ if __name__ == '__main__':
     ids       = IdSpace.Space(graph.site_list, id_space_bit_len, id_space_vm_node)
     simurator = Simulator(graph, model, ids, lb_max, ln_max, sig_trf, cpy_trf, add_num)
 
-    simurator.solve()
+    for i in range(2):
+        simurator.solve(info=True)

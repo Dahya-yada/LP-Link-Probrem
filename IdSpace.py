@@ -79,6 +79,7 @@ class Space(object):
 
         self.vm_id[site] += 1
         self.interm_node = []
+        self.is_interm = False
     
     def get_right_node(self, site='INTERM',vm='Unknown'):
         """

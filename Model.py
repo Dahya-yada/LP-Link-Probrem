@@ -75,7 +75,7 @@ class Model(object):
         for d,i,j in v_x:
             self.model.addConstr(v_x[d,i,j] >= 0)
             self.model.addConstr(v_x[d,i,j] <= 1)
-
+        for d,i,j in v_y:
             self.model.addConstr(v_y[d,i,j] >= 0)
             self.model.addConstr(v_y[d,i,j] <= 1)
 
@@ -112,9 +112,9 @@ class Model(object):
         もし，infoがTrueなら最適化した経路を表示する．
         """
         self.make_model(s, trf_sig, trf_cp, lb_now, lb_max, ln_now, ln_max, nw_node_now)
-        self.model.setParam('OutputFlag', False)
+        self.model.setParam('OutputFlag', False) # No output Gurobi information about optimization
         self.model.optimize()
-
+        # make route
         self.route_sig[s] = self.make_route(s, self.X)
         self.route_cp[s]  = self.make_route(s, self.Y)
 
@@ -169,11 +169,12 @@ class Model(object):
                 continue
             print '*  FOR site {0:2d} :'.format(d),
             for i, j in route[s][d]:
-                print '({0:2d}, {1:2d})'.format(i, j),
+                print '({0:2d}, {1:2d}) '.format(i, j),
                 if j == d:
+                    Utils.StrOut.yellow('END', end='')
                     print ''
                 else:
-                    Utils.StrOut.yellow('-> ', end='\n')
+                    Utils.StrOut.yellow('->', end='')
         print ''
 
 if __name__ == '__main__':
