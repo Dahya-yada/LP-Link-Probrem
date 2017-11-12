@@ -6,6 +6,7 @@
 # pylint: disable=C0301
 
 import copy
+import Utils
 import gurobipy as grb
 
 class Model(object):
@@ -172,7 +173,7 @@ class Model(object):
                 if j == d:
                     print ''
                 else:
-                    print '->',
+                    Utils.StrOut.yellow('-> ', end='\n')
         print ''
 
 if __name__ == '__main__':
