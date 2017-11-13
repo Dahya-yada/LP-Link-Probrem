@@ -150,7 +150,7 @@ class Topology(object):
         cMask = [eColor if n in self.site_list else nColor for n in range(self.node_num)]
         nodes = nx.draw_networkx_nodes (g, self.G_POS, node_size=nSize, node_color=cMask, linewidths=2.0)
         nodes.set_edgecolor('k')
-        nx.draw_networkx_edges (g, self.G_POS, width=linkWidth, edge_color='k', alpha=0.4)
+        nx.draw_networkx_edges (g, self.G_POS, width=linkWidth, edge_color='k')
         # nx.draw_networkx_labels(g, self.G_POS, font_size=fSize, font_family=fFamily)
 
         if first is False:

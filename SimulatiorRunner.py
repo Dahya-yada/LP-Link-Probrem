@@ -59,17 +59,21 @@ class Runner(object):
             o_i = IdSpace.Space(o_g.site_list, self.id_bit, self.id_node)
             o_s = Simurator.Simulator(o_g, o_m, o_i, self.lb_max, self.ln_max, self.sig_trf, self.cpy_trf, self.add_n)
 
-            Utils.StrOut.blue('\n< {}回目 >'.format(n+1))
+            Utils.StrOut.blue('\n< {}回目 >'.format(n+1), end='')
+            print ''
             timer2 = Utils.Timer()
 
-            o_g.generate_images(filename='{}/割当前.svg'.format(dir_fig),   first=True)
+            o_g.generate_images(filename='{0}/{1:02d}割当前.svg'.format(dir_fig, n + 1), first=True)
             for i in range(self.add_n):
                 o_s.solve(info=True)
-            o_g.generate_images(filename='{}/割当後.svg'.format(dir_fig),costList=o_s.x_bw, first=False)
+            o_g.generate_images(filename='{0}/{1:02d}割当後.svg'.format(dir_fig, n + 1), costList=o_s.x_bw, first=False)
+
             Utils.StrOut.green('[VM数],', end='')
             for k in o_s.vm_num:
                 print '[{0:2d}] {1:2d}, '.format(k, o_s.vm_num[k]),
-            Utils.StrOut.yellow('[Time] {:5.2f}\n'.format(timer2.get_time()))
+            Utils.StrOut.yellow('[Time], ', end='')
+            print '{:5.2f}\n'.format(timer2.get_time())
+
             self.make_data(o_s, std_data, link_data, use_data, n)
 
         Utils.StrOut.yellow('[All Time] {:5.2f}'.format(timer1.get_time()))
@@ -92,7 +96,7 @@ class Runner(object):
                 use_data.append([i + 1])
         
         for i in range(self.add_n):
-            std_data[i+1].extend([float(simu.std_num[i]), float(simu.std_num[i])])
+            std_data[i+1].extend([float(simu.std_bw[i]), float(simu.std_num[i])])
             use_data[i+1].extend([float(simu.use_link[i])])
         
         key_l = simu.x_bw.keys()
