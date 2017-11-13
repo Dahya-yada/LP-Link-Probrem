@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 import time
+import os
 import colorama as col
 
 class StrOut(object):
@@ -18,6 +19,7 @@ class StrOut(object):
         >>> StrOut.blue('String')
         String # Fore color is blue
         """
+        col.init()
         print(col.Fore.BLUE + string + col.Fore.RESET, end=end)
     
     @staticmethod
@@ -28,6 +30,7 @@ class StrOut(object):
         >>> StrOut.green('String')
         String # Fore color is green
         """
+        col.init()
         print(col.Fore.GREEN + string + col.Fore.RESET, end=end)
     
     @staticmethod
@@ -38,6 +41,7 @@ class StrOut(object):
         >>> StrOut.yellow('String')
         String # Fore color is yellow
         """
+        col.init()
         print(col.Fore.YELLOW + string + col.Fore.RESET, end=end)
     
     @staticmethod
@@ -48,6 +52,7 @@ class StrOut(object):
         >>> StrOut.magenta('String')
         String # Fore color is magenta
         """
+        col.init()
         print(col.Fore.MAGENTA + string + col.Fore.RESET, end=end)
 
     @staticmethod
@@ -58,6 +63,7 @@ class StrOut(object):
         >>> StrOut.cyan('String')
         String # Fore color is cyan
         """
+        col.init()
         print(col.Fore.CYAN + string + col.Fore.RESET, end=end)
 
     @staticmethod
@@ -68,6 +74,7 @@ class StrOut(object):
         >>> StrOut.red('String')
         String # Fore color is red
         """
+        col.init()
         print(col.Fore.RED + string + col.Fore.RESET, end=end)
     
 
@@ -103,3 +110,18 @@ class Timer(object):
         """
         return time.time() - self.start_time
 
+
+class DirMaker(object):
+    """
+    ディレクトリを作成します．
+    """
+    @staticmethod
+    def make(dirpath):
+        """
+        dirpathに指定されたディレクトリを作成します．
+        dirpathになるように中間のディレクトリも作成します．
+        """
+        if os.path.exists(dirpath):
+            return
+        else:
+            os.makedirs(dirpath)
