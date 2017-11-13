@@ -15,14 +15,14 @@ class Simulator(object):
     すべての拠点へVM配置及び仮想リンク割当を行い，目的関数の値が最大の拠点と仮想リンク経路を求めます．
     """
 
-    def __init__(self, graph, model, id_space, lb_max, ln_max, max_sig_trf, max_cp_trf, vm_add_num):
+    def __init__(self, graph, model, id_space, lb_max, ln_max, sig_trf, cp_trf, vm_add_num):
         self.graph    = graph
         self.model    = model
         self.id_space = id_space
         self.lb_max   = lb_max
         self.ln_max   = ln_max
-        self.t_sig    = max_sig_trf
-        self.t_cp     = max_cp_trf
+        self.t_sig    = sig_trf
+        self.t_cp     = cp_trf
         self.try_n    = 0
         self.try_m    = vm_add_num
 
@@ -78,7 +78,7 @@ class Simulator(object):
         self.try_n += 1
         # Output information on standard output
         if info:
-            print '{0:3d}回目,'.format(self.try_n), 
+            print '{0:3d}回目, '.format(self.try_n), 
             Utils.StrOut.green('[拠点],', end='')
             print '{0:2d},  '.format(detect_site),
             Utils.StrOut.green('[V_L],', end='')
@@ -90,7 +90,7 @@ class Simulator(object):
             Utils.StrOut.green('[STD_L],', end='')
             print '{0:>7.3f},  '.format(self.std_bw[self.try_n - 1]),
             Utils.StrOut.green('[STD_N],', end='')
-            print '{0:>6.3f}   '.format(self.std_num[self.try_n - 1]),
+            print '{0:>6.3f},  '.format(self.std_num[self.try_n - 1]),
             Utils.StrOut.yellow('[Time],', end='')
             print '{0:>5.2f}   '.format(timer.get_time())
 
@@ -134,7 +134,7 @@ class Simulator(object):
         線形計画法に必要な使用帯域マトリックス(lb_now)を生成します．
         """
         lb_mat = {(i, j): self.lb_max for i in range(self.graph.node_num) for j in range(self.graph.node_num)}
-        for i, j in self.graph.link_list:
+        for i, j in self.graph.both_link_list:
             lb_mat[i,j] = 0
             lb_mat[j,i] = 0
         for i, j in self.graph.link_list:
@@ -147,7 +147,7 @@ class Simulator(object):
         線形計画法に必要な消費リンク数を表すマトリックス(ln_now)を生成します．
         """
         ln_mat = {(i, j): self.ln_max for i in range(self.graph.node_num) for j in range(self.graph.node_num)}
-        for i, j in self.graph.link_list:
+        for i, j in self.graph.both_link_list:
             ln_mat[i,j] = 0
             ln_mat[j,i] = 0
         for i, j in self.graph.link_list:
@@ -312,5 +312,5 @@ if __name__ == '__main__':
     ids       = IdSpace.Space(graph.site_list, id_space_bit_len, id_space_vm_node)
     simurator = Simulator(graph, model, ids, lb_max, ln_max, sig_trf, cpy_trf, add_num)
 
-    for i in range(2):
+    for i2 in range(2):
         simurator.solve(info=True)

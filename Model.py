@@ -52,7 +52,7 @@ class Model(object):
         self.N = v_n
 
         # 目的関数
-        self.model.setObjective((v_l * 200 / lb_max) + (v_n * 100 / ln_max), grb.GRB.MAXIMIZE)
+        self.model.setObjective((v_l * 100 / lb_max) + (v_n * 200 / ln_max), grb.GRB.MAXIMIZE)
 
         # 制約: フロー保存
         for d,i in di_set:
@@ -113,6 +113,7 @@ class Model(object):
         """
         self.make_model(s, trf_sig, trf_cp, lb_now, lb_max, ln_now, ln_max, nw_node_now)
         self.model.setParam('OutputFlag', False) # No output Gurobi information about optimization
+        self.model.setParam('Therads', 4)
         self.model.optimize()
         # make route
         self.route_sig[s] = self.make_route(s, self.X)
