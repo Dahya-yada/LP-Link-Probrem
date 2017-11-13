@@ -14,14 +14,15 @@ class Simulator(object):
     1回だけVMを割り当てるシミュレーションを実行します．
     すべての拠点へVM配置及び仮想リンク割当を行い，目的関数の値が最大の拠点と仮想リンク経路を求めます．
     """
-    def __init__(self, graph, model, id_space, lb_max, ln_max, sig_trf, cpy_trf, vm_add_num):
+
+    def __init__(self, graph, model, id_space, lb_max, ln_max, sig_trf, cp_trf, vm_add_num):
         self.graph    = graph
         self.model    = model
         self.id_space = id_space
         self.lb_max   = lb_max
         self.ln_max   = ln_max
         self.t_sig    = sig_trf
-        self.t_cpy    = cpy_trf
+        self.t_cp     = cp_trf
         self.try_n    = 0
         self.try_m    = vm_add_num
 
@@ -31,15 +32,14 @@ class Simulator(object):
         self.x_cp_route = {}
         self.vm_num     = {s: 0 for s in self.graph.site_list}
 
-        self.obj_val  = {n: 0 for n in range(vm_add_num)}
-        self.std_bw   = {n: 0 for n in range(vm_add_num)}
-        self.std_num  = {n: 0 for n in range(vm_add_num)}
-        self.use_link = {n: 0 for n in range(vm_add_num)}
+        self.obj_val    = {n: 0 for n in range(vm_add_num)}
+        self.std_bw     = {n: 0 for n in range(vm_add_num)}
+        self.std_num    = {n: 0 for n in range(vm_add_num)}
+        self.use_link   = {n: 0 for n in range(vm_add_num)}
 
     def solve(self, info=False):
         """
         シミュレーションを実行します．
-        info=Trueならシミュレーションの結果を表示します．
         """
         # Measure the time
         timer = Utils.Timer()
@@ -51,42 +51,42 @@ class Simulator(object):
         solve_v_n = {s:  0 for s in self.graph.site_list}
         # Add virtual nodes
         self.id_space.add_vm()
-        # Run simulation for all sites
+        # Run simulator for all sites
         for s in self.graph.site_list:
-            # Run linner programming to optimize
-            self.model.optimize(s, self.get_sig_traffic(s, is_next=True), self.get_cpy_traffic(s, is_next=True),
+            # Run to optimize for linner programming
+            self.model.optimize(s, self.get_sig_traffic(s, is_next=True), self.get_cp_traffic(s, is_next=True),
                                 self.get_lb_matrix(), self.lb_max, self.get_ln_matrix(), self.ln_max,
                                 self.get_node_spent_matrix(), info=False)
             # Process optimized datas
             self.add_x_sig_solve(s, solve_sig)
-            self.add_x_cpy_solve(s, solve_cpy)
+            self.add_x_cp_solve (s, solve_cpy)
             self.add_decision_var_solve(s, solve_v_o, solve_v_l, solve_v_n)
-            # if information is True, then print solved mark "."
+            # if information is true:
             if info:
                 Utils.StrOut.yellow('.', end='')
-        # process datas
-        decided_site = self.decide_site(solve_v_o)
-        self.id_space.decide_interm_site(decided_site)
-        self.vm_num[decided_site] += 1
-        self.update_x_sig_num(decided_site, solve_sig)
-        self.update_x_cp_route(decided_site, self.try_n, solve_cpy)
+        # Process datas
+        detect_site = self.decide_site(solve_v_o)
+        self.id_space.decide_interm_site(detect_site)
+        self.vm_num[detect_site] += 1
+        self.update_x_sig_num(detect_site, solve_sig)
+        self.update_x_cp_route(detect_site, self.try_n, solve_cpy)
         self.update_x_bw()
         self.update_x_num()
+        self.update_obj_val_decided(detect_site, self.try_n, solve_v_o)
         self.update_use_link(self.try_n)
-        self.update_obj_val(decided_site, self.try_n, solve_v_o)
         self.update_std(self.try_n)
         self.try_n += 1
-        # show information
+        # Output information on standard output
         if info:
             print '{0:3d}回目, '.format(self.try_n), 
             Utils.StrOut.green('[拠点],', end='')
-            print '{0:2d},  '.format(decided_site),
+            print '{0:2d},  '.format(detect_site),
             Utils.StrOut.green('[V_L],', end='')
-            print '{0:>7.3f},  '.format(100 * solve_v_l[decided_site] / self.lb_max),
+            print '{0:>7.3f},  '.format(100 * solve_v_l[detect_site] / self.lb_max),
             Utils.StrOut.green('[V_N],', end='')
-            print '{0:>7.3f},  '.format(100 * solve_v_n[decided_site] / self.ln_max),
+            print '{0:>7.3f},  '.format(100 * solve_v_n[detect_site] / self.ln_max),
             Utils.StrOut.green('[V_OBJ],', end='')
-            print '{0:>7.3f},  '.format(self.obj_val[self.try_n - 1] - self.vm_num[decided_site]),
+            print '{0:>7.3f},  '.format(self.obj_val[self.try_n - 1] - self.vm_num[detect_site]),
             Utils.StrOut.green('[STD_L],', end='')
             print '{0:>7.3f},  '.format(self.std_bw[self.try_n - 1]),
             Utils.StrOut.green('[STD_N],', end='')
@@ -94,27 +94,28 @@ class Simulator(object):
             Utils.StrOut.yellow('[Time],', end='')
             print '{0:>5.2f}   '.format(timer.get_time())
 
+
     def get_sig_traffic(self, s, is_next=False):
         """
         sから他の拠点に転送する信号トラヒックを取得します．
         """
+        
         if is_next:
-            trf = self.t_sig / self.graph.site_num / (self.vm_num[s] + 1)
+            trf = self.t_sig / (self.vm_num[s] + 1) / self.graph.site_num
         elif self.vm_num[s] == 0:
             trf = 0
         else:
-            trf = self.t_sig / self.graph.site_num / self.vm_num[s]
+            trf = self.t_sig / self.vm_num[s] / self.graph.site_num
         return trf
 
-    def get_cpy_traffic(self, s, vm_id=None, is_next=False):
+    def get_cp_traffic(self, s, vm_id=None, is_next=False):
         """
-        拠点sにあるvm_idのVMが他の拠点に転送する複製トラヒックを取得します．
-        vm_idを指定しなかった場合，拠点が未確定のノードについて，複製トラヒックを取得します．
+        拠点sにあるvm_idのMVが他の拠点に転送する複製トラヒックを取得します．
         """
         n_list = self.id_space.get_right_node_by_id(vm_id)
         n_all  = sum(n_list.values())
         t_list = {s:0 for s in self.graph.site_list}
-
+        
         for d in t_list:
             if n_list[d] == 0:
                 trf_ratio = 1.0 / self.graph.site_num
@@ -122,22 +123,23 @@ class Simulator(object):
                 trf_ratio = 1.0 * n_list[d] / n_all
 
             if is_next:
-                trf = trf_ratio * self.t_cpy / (self.vm_num[s] + 1)
+                trf = trf_ratio * self.t_cp / (self.vm_num[s] + 1)
             else:
-                trf = trf_ratio * self.t_cpy / self.vm_num[s]
+                trf = trf_ratio * self.t_cp / self.vm_num[s] 
             t_list[d] += trf
         return t_list
 
     def get_lb_matrix(self):
         """
-        線形計画法に必要な使用物理リンク帯域マトリックス(lb_now)を生成します．
+        線形計画法に必要な使用帯域マトリックス(lb_now)を生成します．
         """
         lb_mat = {(i, j): self.lb_max for i in range(self.graph.node_num) for j in range(self.graph.node_num)}
         for i, j in self.graph.both_link_list:
-            lb_mat[i, j] = 0
-        for i,j in self.graph.link_list:
-            lb_mat[i, j] += self.x_bw[i, j]
-            lb_mat[j, i] += self.x_bw[i, j]
+            lb_mat[i,j] = 0
+            lb_mat[j,i] = 0
+        for i, j in self.graph.link_list:
+            lb_mat[i,j] += self.x_bw[i,j]
+            lb_mat[j,i] += self.x_bw[i,j]
         return lb_mat
 
     def get_ln_matrix(self):
@@ -146,15 +148,16 @@ class Simulator(object):
         """
         ln_mat = {(i, j): self.ln_max for i in range(self.graph.node_num) for j in range(self.graph.node_num)}
         for i, j in self.graph.both_link_list:
-            ln_mat[i, j] = 0
+            ln_mat[i,j] = 0
+            ln_mat[j,i] = 0
         for i, j in self.graph.link_list:
-            ln_mat[i, j] += self.x_num[i, j]
-            ln_mat[j, i] += self.x_num[i, j]
+            ln_mat[i,j] = self.x_num[i,j]
+            ln_mat[j,i] = self.x_num[i,j]
         return ln_mat
 
     def get_node_spent_matrix(self):
         """
-        線形計画法に必要なノードに到達したトラヒックを表すマトリックス(nw_node_now)を生成します．
+        数理計画法に必要なノードに到達したトラヒックを表すマトリックス(nw_node_now)を生成します．
         """
         node_mat = {n: 0 for n in range(self.graph.node_num)}
         for i, j in self.graph.link_list:
@@ -163,34 +166,33 @@ class Simulator(object):
 
     def add_x_sig_solve(self, s, solve_data):
         """
-        最適化した決定変数X(決定した物理リンク経路)の値をsolve_dataに追加します．
+        最適化した決定変数Xの値を引数solve_dataに追加します．
         """
-        d_new = {(i, j): 0 for i, j in self.graph.link_list}
-        for d in self.model.route:
+        d_new = {(i,j): 0 for i,j in self.graph.link_list}
+        for d in self.model.route_sig:
             for i, j in d_new:
-                if (i, j) in self.model.route[s][d]:
+                if (i, j) in self.model.route_sig[s][d]:
                     d_new[i, j] += 1
-                if (j, i) in self.model.route[s][d]:
+                if (j, i) in self.model.route_sig[s][d]:
                     d_new[i, j] += 1
         solve_data[s] = copy.deepcopy(d_new)
 
-    def add_x_cpy_solve(self, s, solve_data):
+    def add_x_cp_solve(self, s, solve_data):
         """
-        最適化した決定変数X(決定した物理リンク経路)の値をsolve_dataに追加します．
-        これは複製トラヒックのための経路を格納するものです．
+        最適化した決定変数Yの値を引数solve_dataに追加します．
         """
         d_new = {}
-        for d in self.model.route[s]:
-            d_new[d] = copy.deepcopy(self.model.route[s][d])
+        for d in self.model.route_cp[s]:
+            d_new[d] = copy.deepcopy(self.model.route_cp[s][d])
         solve_data[s] = copy.deepcopy(d_new)
-    
+
     def add_decision_var_solve(self, s, o_data, l_data, n_data):
         """
-        最適化した決定変数L, N, Objective-Valueの値をl_data, n_data, o_dataに追加します．
+        最適化した決定変数の値をo_data, l_data, n_dataに代入します．
         """
         o_data[s] = float(self.model.model.objval)
         l_data[s] = float(self.model.L.x)
-        n_data[s] = float(self.model.N.x)
+        n_data[s] = float(self.model.N.x) 
 
     def decide_site(self, o_data, info=False):
         """
@@ -198,7 +200,7 @@ class Simulator(object):
         """
         eval_list = {s: o_data[s] - self.vm_num[s] for s in self.graph.site_list}
         decided   = max(eval_list.items(), key=lambda x: x[1])[0]
-    
+
         if info:
             print "DECIDED SITE",
             Utils.StrOut.green('  [SITE]: ', end='')
@@ -207,6 +209,12 @@ class Simulator(object):
             print (eval_list[decided])
 
         return decided
+
+    def update_obj_val_decided(self, s, t, o_data):
+        """
+        t回目に決定したVM追加拠点sの目的関数の値をインスタンス変数obj_valに追加します．
+        """
+        self.obj_val[t] += o_data[s]
 
     def update_x_sig_num(self, s, solve_data):
         """
@@ -217,7 +225,7 @@ class Simulator(object):
 
     def update_x_cp_route(self, s, vm_id, solve_data):
         """
-        solve_dataに基づいてインスタンス変数x_cp_routeを更新します．
+        solve_dataに基づいてインスタンス変数x_cp_numを更新します．
         """
         for d in solve_data:
             if s != d:
@@ -225,17 +233,16 @@ class Simulator(object):
 
     def update_x_bw(self):
         """
-        使用物理リンク帯域を表すインスタンス変数x_bwを更新します．
+        インスタンス変数x_bwを更新します．
         """
         d_new = {l: 0 for l in self.graph.link_list}
-        # Traffic of dispatch:
+        # Traffic of dispatch
         for s in self.x_sig_num:
             t = self.get_sig_traffic(s)
             for l in d_new:
                 d_new[l] += self.x_sig_num[s][l] * t
-        # Traffic of replication
         for vi, s, d in self.x_cp_route:
-            t = self.get_cpy_traffic(s, vi)
+            t = self.get_cp_traffic(s, vi)
             for i, j in self.x_cp_route[(vi, s, d)]:
                 if (i, j) in d_new:
                     d_new[(i, j)] += t[d]
@@ -245,12 +252,18 @@ class Simulator(object):
 
     def update_x_num(self):
         """
-        各物理リンク中の仮想リンク本数を表すインスタンス変数x_numを更新します．
+        インスタンス変数x_numを更新します．
         """
         d_new = {l: 0 for l in self.graph.link_list}
         for s in self.x_sig_num:
             for l in d_new:
                 d_new[l] += self.x_sig_num[s][l]
+        for idx in self.x_cp_route:
+            for i, j in self.x_cp_route[idx]:
+                if (i, j) in d_new:
+                    d_new[i, j] += 1
+                if (j, i) in d_new:
+                    d_new[j, i] += 1
         self.x_num = copy.deepcopy(d_new)
 
     def update_use_link(self, t):
@@ -261,25 +274,19 @@ class Simulator(object):
             if self.x_num[l] > 0:
                 self.use_link[t] += 1
 
-    def update_obj_val(self, s, t, o_data):
-        """
-        t回目に決定したVM追加拠点sの目的関数の値をインスタンス変数obj_valに追加します．
-        """
-        self.obj_val[t] += o_data[s]
-    
     def update_std(self, t, info=False):
         """
         試行回数t回目の各標準偏差を更新します．
         """
-        std_bw = numpy.std(self.x_bw.values())
-        std_n  = numpy.std(self.x_num.values())
-        self.std_bw[t]  = float(std_bw)
+        std_b = numpy.std(self.x_bw.values())
+        std_n = numpy.std(self.x_num.values())
+        self.std_bw[t]  = float(std_b)
         self.std_num[t] = float(std_n)
 
         if info:
             print 'STANDARD DEVIATION',
             Utils.StrOut.green('  [BAND]: ', end='')
-            print std_bw,
+            print std_b,
             Utils.StrOut.green('  [NUM]: ', end='')
             print std_n
 

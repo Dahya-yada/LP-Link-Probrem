@@ -28,11 +28,11 @@ class Runner(object):
         self.cpy_trf = 1 * 200000 / 3600   # 複製の容量(1拠点あたり)
         self.t_div   = 5                   # トラヒック分割数
         self.add_n   = 100                 # 最大VM追加数
-        self.try_n   = 10                  # シミュレーション回数
+        self.try_n   = 5                  # シミュレーション回数
         self.id_bit  = 128                 # ID空間の長さ(bit)
         self.id_node = 20                  # 1VMあたりの仮想ノード数
 
-        self.name    = 'Simu_1_in_cp_inc'  # シミュレーション名
+        self.name    = 'Simu_1_div_cp'     # シミュレーション名
         self.csv_dir = 'data'              # CSV保存ディレクトリ
         self.fig_dir = 'fig'               # SVG保存ディレクトリ
 
@@ -66,7 +66,7 @@ class Runner(object):
 
             o_g.generate_images(filename='{0}/{1:02d}割当前.svg'.format(dir_fig, n + 1), first=True)
             for i in range(self.add_n):
-                self.change_traffic(o_s, self.sig_trf, self.cpy_trf, self.t_div, self.add_n, i)
+                # self.change_traffic(o_s, self.sig_trf, self.cpy_trf, self.t_div, self.add_n, i)
                 o_s.solve(info=True)
             o_g.generate_images(filename='{0}/{1:02d}割当後.svg'.format(dir_fig, n + 1), costList=o_s.x_bw, first=False)
 
@@ -78,7 +78,7 @@ class Runner(object):
 
             self.make_data(o_s, std_data, link_data, use_data, n)
 
-        Utils.StrOut.yellow('【 !! FINISH SIMULATION !! 】 => All Time: {:5.2f}'.format(timer1.get_time()))
+        Utils.StrOut.yellow('[All Time] {:5.2f}'.format(timer1.get_time()))
         self.output_csv(std_data, link_data, use_data, dir_data)
     
     def change_traffic(self,simu, sig_trf_max, cpy_trf_max, div, add_n, t):
@@ -98,7 +98,7 @@ class Runner(object):
             simu.t_sig = sig_unit * ((t / term) + 1)
             simu.t_cpy = cpy_unit * ((t / term) + 1)
             Utils.StrOut.yellow('-> Input ', end='')
-            print 'sig = {}  cpy = {},'.format(simu.t_sig, simu.t_cpy)
+            print 'sig = {} cpy = {},'.format(simu.t_sig, simu.t_cpy)
 
     def make_data(self,simu, std_data, link_data, use_data, n):
         """
