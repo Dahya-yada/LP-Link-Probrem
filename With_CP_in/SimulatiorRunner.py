@@ -28,11 +28,11 @@ class Runner(object):
         self.cpy_trf = 1 * 200000 / 3600   # 複製の容量(1拠点あたり)
         self.t_div   = 5                   # トラヒック分割数
         self.add_n   = 100                 # 最大VM追加数
-        self.try_n   = 10                  # シミュレーション回数
+        self.try_n   = 1                   # シミュレーション回数
         self.id_bit  = 128                 # ID空間の長さ(bit)
         self.id_node = 20                  # 1VMあたりの仮想ノード数
 
-        self.name    = 'Simu_1_in_cp_inc'  # シミュレーション名
+        self.name    = 'Simu_2_in_cp_inc'  # シミュレーション名
         self.csv_dir = 'data'              # CSV保存ディレクトリ
         self.fig_dir = 'fig'               # SVG保存ディレクトリ
 

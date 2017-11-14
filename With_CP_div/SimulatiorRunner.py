@@ -32,7 +32,7 @@ class Runner(object):
         self.id_bit  = 128                 # ID空間の長さ(bit)
         self.id_node = 20                  # 1VMあたりの仮想ノード数
 
-        self.name    = 'Simu_1_div_cp'     # シミュレーション名
+        self.name    = 'Simu_1_div_cp_inc'     # シミュレーション名
         self.csv_dir = 'data'              # CSV保存ディレクトリ
         self.fig_dir = 'fig'               # SVG保存ディレクトリ
 
@@ -66,7 +66,7 @@ class Runner(object):
 
             o_g.generate_images(filename='{0}/{1:02d}割当前.svg'.format(dir_fig, n + 1), first=True)
             for i in range(self.add_n):
-                # self.change_traffic(o_s, self.sig_trf, self.cpy_trf, self.t_div, self.add_n, i)
+                self.change_traffic(o_s, self.sig_trf, self.cpy_trf, self.t_div, self.add_n, i)
                 o_s.solve(info=True)
             o_g.generate_images(filename='{0}/{1:02d}割当後.svg'.format(dir_fig, n + 1), costList=o_s.x_bw, first=False)
 
